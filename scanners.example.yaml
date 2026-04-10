@@ -1,0 +1,96 @@
+# Copy this to scanners.yaml and edit to taste.
+
+# Optional Textual theme. Built-ins: textual-dark (default), textual-light,
+# nord, gruvbox, tokyo-night, dracula, monokai, solarized-light, flexoki,
+# catppuccin-mocha, catppuccin-latte. Picking one here makes it persist across
+# runs (the in-app theme picker only changes it for the current session).
+# theme: nord
+
+ib:
+  host: 127.0.0.1
+  # 7497 = TWS paper, 7496 = TWS live
+  # 4002 = IB Gateway paper, 4001 = IB Gateway live
+  port: 7497
+  client_id: 17
+  # 1=live, 2=frozen, 3=delayed, 4=delayed-frozen
+  # Use 3 if you don't have live market data subscriptions.
+  market_data_type: 3
+
+# Each scanner refreshes on its own interval. The conditions list is
+# AND-ed together. Available names per symbol come from the indicator
+# pipeline (see ibscanner/indicators.py): close, open, high, low, volume,
+# sma_5/10/20/50/200, ema_9/12/26, rsi_14, macd, macd_signal, macd_hist,
+# bb_upper/bb_lower/bb_mid, atr_14, volume_sma_20, volume_ratio,
+# pct_change. Each one also has a `prev_` prefixed version for the
+# previous bar (e.g. prev_rsi_14) so you can express crosses.
+scanners:
+  - name: oversold-bounce
+    symbols: [AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD]
+    bar_size: "5 mins"
+    duration: "2 D"
+    refresh_seconds: 30
+    conditions:
+      - rsi_14 < 35
+      - close > sma_20 * 0.97
+    columns: [close, rsi_14, volume, pct_change, sma_20]
+
+  - name: volume-breakout
+    symbols: [SPY, QQQ, IWM, DIA]
+    bar_size: "1 min"
+    duration: "1 D"
+    refresh_seconds: 15
+    conditions:
+      - volume_ratio > 2
+      - close > prev_close
+    columns: [close, volume, volume_ratio, pct_change]
+
+  - name: macd-cross-up
+    symbols: [AAPL, MSFT, NVDA, AMD, TSLA]
+    bar_size: "15 mins"
+    duration: "5 D"
+    refresh_seconds: 60
+    conditions:
+      - macd > macd_signal
+      - prev_macd <= prev_macd_signal
+    columns: [close, macd, macd_signal, rsi_14]
+
+  # IBKR-side market scanner. Unlike a watchlist scanner, this asks
+  # IBKR's reqScannerSubscription to search the entire universe defined
+  # by `instrument` + `location_code`, sorted by `scan_code`, narrowed
+  # by `filters`. Filter tag names come from reqScannerParameters — run
+  # scripts/explore_scanner_params.py to dump the catalog.
+  #
+  # When `enrich: true` (the default for ibkr_scan) we fetch historical
+  # bars for each result so you get last close, day change, volume, and
+  # rvol in the table — IBKR's scan API alone only returns symbol+rank
+  # for stock scans, so without enrich the table is sparse.
+  #
+  # `post_conditions` (optional) lets you layer indicator-based rules
+  # on top, AND-ed with the IBKR filters. They auto-enable enrich.
+  #
+  # NOTE 1: IBKR's scanner refreshes server-side roughly every 30s, so
+  # `refresh_seconds: 10` will often return identical data — useful for
+  # fast iteration during dev, wasteful in steady state.
+  #
+  # NOTE 2: `floatSharesBelow` is a valid catalog filter but IBKR may
+  # reject it on accounts without a fundamentals subscription with
+  # error 10360 ("Scan filter floatSharesBelow is not allowed"). It is
+  # commented out below — re-enable if your account permits.
+  #
+  # NOTE 3: `volumeVsAvgAbove` units are not documented; empirically
+  # `500` is more restrictive than `5`, consistent with the value being
+  # a percentage of average volume (so 500 ≈ 5× avg). Verify against
+  # your own data and adjust.
+  - name: low-float-runners
+    type: ibkr_scan
+    scan_code: TOP_PERC_GAIN
+    instrument: STK
+    location_code: STK.US.MAJOR
+    refresh_seconds: 10
+    filters:
+      priceAbove: 2
+      priceBelow: 12
+      changePercAbove: 10
+      # floatSharesBelow: 20000000   # requires fundamentals subscription
+      volumeVsAvgAbove: 500          # ~5× avg volume (see NOTE 3)
+    columns: [close, pct_change, volume, volume_ratio, market_name]

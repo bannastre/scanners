@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# User config (keep example, ignore real one)
+scanners.yaml
+.env
+
+# Scanner parameter exploration artifacts
+scanner_params.xml
+scanner_params.md
+
+# OS
+.DS_Store
+
+# Claude Code
+.claude
