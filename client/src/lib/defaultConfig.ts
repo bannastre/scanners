@@ -23,7 +23,7 @@ export const DEFAULT_CONFIG_YAML = `# ibscanner default config.
 # pct_change. Each also has a prev_ prefix for the previous bar.
 
 ibkr:
-  base_url: https://localhost:5000
+  base_url: https://localhost:5001
 
 scanners:
   - name: oversold-bounce

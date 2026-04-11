@@ -117,3 +117,68 @@ tbody tr:nth-child(even) { background: var(--row-even); }
 tbody tr:nth-child(odd)  { background: var(--row-odd); }
 tbody tr.matched   td { color: var(--green); }
 tbody tr.unmatched td { color: #6e7681; }
+
+/* ── Shared error banner ─────────────────────────────────── */
+.error {
+  background: #2b1214;
+  border: 1px solid #5c1a1e;
+  color: var(--red);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+/* ── Config editor ───────────────────────────────────────── */
+.tab-btn.config-tab { margin-left: auto; }
+
+.config-pane { gap: 10px; }
+
+.config-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.config-actions button {
+  background: #21262d;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  font-family: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+  border-radius: 3px;
+}
+.config-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.config-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.config-actions .dirty { color: var(--yellow); font-size: 0.8em; margin-left: 4px; }
+.config-actions .saved { color: var(--muted); font-size: 0.8em; margin-left: 4px; }
+
+.yaml-editor {
+  flex: 1;
+  min-height: 300px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.9em;
+  resize: none;
+  outline: none;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+.yaml-editor:focus { border-color: var(--accent); }
