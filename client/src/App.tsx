@@ -1,65 +1,75 @@
-import { useState, useEffect } from 'react';
-import { ScannerInfo, ScanResult } from './types';
+import { useEffect, useMemo, useState } from 'react';
+import { parseConfig } from './lib/config';
+import { IBKRClient } from './lib/ibkr';
+import { DEFAULT_CONFIG_YAML } from './lib/defaultConfig';
+import { useAuthStatus } from './hooks/useAuthStatus';
 import ScannerPane from './components/ScannerPane';
 
-type ConnectionState = 'connecting' | 'connected' | 'disconnected';
+const STORAGE_KEY = 'ibscanner.config.yaml';
 
 export default function App() {
-  const [scanners, setScanners]       = useState<ScannerInfo[]>([]);
-  const [results, setResults]         = useState<Record<string, ScanResult>>({});
-  const [activeTab, setActiveTab]     = useState<string>('');
-  const [connection, setConnection]   = useState<ConnectionState>('connecting');
+  // YAML is sourced from localStorage, with the bundled default as the
+  // first-load fallback. Step 4 wires an editor up to this state.
+  const [yamlText] = useState<string>(
+    () => localStorage.getItem(STORAGE_KEY) ?? DEFAULT_CONFIG_YAML,
+  );
 
-  // Load scanner metadata once on mount
-  useEffect(() => {
-    fetch('/api/scanners')
-      .then(r => r.json())
-      .then((data: ScannerInfo[]) => {
-        setScanners(data);
-        if (data.length) setActiveTab(data[0].name);
-      })
-      .catch(() => setConnection('disconnected'));
-  }, []);
-
-  // Open SSE stream and keep it alive on reconnect
-  useEffect(() => {
-    let es: EventSource;
-
-    function connect() {
-      es = new EventSource('/api/stream');
-
-      es.addEventListener('scanner_update', e => {
-        setConnection('connected');
-        const result: ScanResult = JSON.parse((e as MessageEvent).data);
-        setResults(prev => ({ ...prev, [result.name]: result }));
-      });
-
-      es.onerror = () => {
-        setConnection('disconnected');
-        es.close();
-        setTimeout(connect, 5_000);
-      };
+  const parsed = useMemo(() => {
+    try {
+      return { config: parseConfig(yamlText), error: null as string | null };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { config: null, error: msg };
     }
+  }, [yamlText]);
 
-    connect();
-    return () => es.close();
-  }, []);
+  // Always build a client, even on parse error, so the useAuthStatus
+  // hook call stays unconditional. Base URL falls back to the gateway
+  // default; if parsing failed the user will see the error banner and
+  // nothing will actually hit the network.
+  const baseUrl = parsed.config?.ibkr.baseUrl ?? 'https://localhost:5000';
+  const ibkr = useMemo(() => new IBKRClient(baseUrl), [baseUrl]);
+  const { authenticated, checked } = useAuthStatus(ibkr);
 
-  const statusLabel: Record<ConnectionState, string> = {
-    connecting:   'connecting…',
-    connected:    'connected',
-    disconnected: 'reconnecting…',
-  };
+  const [activeTab, setActiveTab] = useState<string>('');
+  useEffect(() => {
+    if (parsed.config && parsed.config.scanners.length && !activeTab) {
+      setActiveTab(parsed.config.scanners[0].name);
+    }
+  }, [parsed.config, activeTab]);
+
+  if (parsed.error) {
+    return (
+      <>
+        <header>
+          <h1>IBKR Scanners</h1>
+          <span className="status disconnected">config error</span>
+        </header>
+        <main>
+          <pre className="error">{parsed.error}</pre>
+        </main>
+      </>
+    );
+  }
+
+  const config = parsed.config!;
+
+  const statusLabel = !checked
+    ? 'checking gateway…'
+    : authenticated
+      ? 'connected'
+      : 'not authenticated — visit https://localhost:5000';
+  const statusClass = !checked ? 'connecting' : authenticated ? 'connected' : 'disconnected';
 
   return (
     <>
       <header>
         <h1>IBKR Scanners</h1>
-        <span className={`status ${connection}`}>{statusLabel[connection]}</span>
+        <span className={`status ${statusClass}`}>{statusLabel}</span>
       </header>
 
       <nav>
-        {scanners.map(s => (
+        {config.scanners.map(s => (
           <button
             key={s.name}
             className={`tab-btn${activeTab === s.name ? ' active' : ''}`}
@@ -71,9 +81,9 @@ export default function App() {
       </nav>
 
       <main>
-        {scanners.map(s => (
+        {config.scanners.map(s => (
           <div key={s.name} style={{ display: activeTab === s.name ? 'contents' : 'none' }}>
-            <ScannerPane scanner={s} result={results[s.name]} />
+            <ScannerPane config={s} ibkr={ibkr} enabled={authenticated} />
           </div>
         ))}
       </main>
