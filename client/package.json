@@ -8,10 +8,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "filtrex": "^3.1.0",
+    "js-yaml": "^4.1.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "technicalindicators": "^3.1.0"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
