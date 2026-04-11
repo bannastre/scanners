@@ -1,9 +1,28 @@
-import { Parser } from 'expr-eval';
-import { IBKRClient } from './ibkr';
+import { create, all } from 'mathjs';
+import { IBKRClient, formatAxiosError } from './ibkr';
 import { computeIndicators, IndicatorValues } from './indicators';
 import { ScannerConfig, WatchlistConfig, IBKRScanConfig, ScanResult, ScanRow } from './types';
 
-const parser = new Parser();
+// Locked-down mathjs instance. Scanner conditions come from user-authored
+// YAML, so we disable every function that can reach the runtime or mutate
+// state (import/createUnit/parse/evaluate/simplify/derivative). This matches
+// the hardening recommended in the mathjs security guide:
+// https://mathjs.org/docs/expressions/security.html
+const math = create(all);
+const disabled = () => {
+  throw new Error('function disabled');
+};
+math.import(
+  {
+    import:     disabled,
+    createUnit: disabled,
+    evaluate:   disabled,
+    parse:      disabled,
+    simplify:   disabled,
+    derivative: disabled,
+  },
+  { override: true },
+);
 
 export async function runScanner(config: ScannerConfig, ibkr: IBKRClient): Promise<ScanResult> {
   const start = Date.now();
@@ -39,7 +58,7 @@ async function runWatchlist(config: WatchlistConfig, ibkr: IBKRClient): Promise<
         cells: formatCells(names, config.columns),
       });
     } catch (err) {
-      rows.push(errorRow(symbol, String(err)));
+      rows.push(errorRow(symbol, formatAxiosError(err)));
     }
   }
 
@@ -83,7 +102,7 @@ async function runIBKRScan(config: IBKRScanConfig, ibkr: IBKRClient): Promise<Sc
         cells:   formatCells(names, config.columns),
       });
     } catch (err) {
-      rows.push(errorRow(result.symbol, String(err)));
+      rows.push(errorRow(result.symbol, formatAxiosError(err)));
     }
   }
 
@@ -106,7 +125,7 @@ function buildNames(
 function evaluate(conditions: string[], names: Record<string, unknown>): boolean {
   if (!conditions.length) return true;
   try {
-    return conditions.every(cond => Boolean(parser.evaluate(cond, names as Record<string, number>)));
+    return conditions.every(cond => Boolean(math.evaluate(cond, names as Record<string, number>)));
   } catch {
     return false;
   }

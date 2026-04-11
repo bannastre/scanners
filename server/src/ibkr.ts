@@ -10,6 +10,29 @@ import axios, { AxiosInstance } from 'axios';
 import https from 'https';
 import { Bar } from './types';
 
+/**
+ * Produce a one-line, grep-friendly summary of an unknown error.
+ * AxiosErrors get `METHOD path → status/code` so logs stay legible instead
+ * of dumping the full request config, httpsAgent, and body buffers.
+ */
+export function formatAxiosError(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    const method = err.config?.method?.toUpperCase() ?? '?';
+    const url    = err.config?.url ?? '?';
+    if (err.code === 'ECONNABORTED') {
+      return `${method} ${url} → timeout after ${err.config?.timeout ?? '?'}ms (is the IBKR Client Portal Gateway authenticated? visit ${err.config?.baseURL ?? 'https://localhost:5000'} and log in)`;
+    }
+    if (err.code === 'ECONNREFUSED') {
+      return `${method} ${url} → connection refused (gateway not running at ${err.config?.baseURL ?? 'https://localhost:5000'})`;
+    }
+    if (err.response) {
+      return `${method} ${url} → ${err.response.status} ${err.response.statusText}`;
+    }
+    return `${method} ${url} → ${err.code ?? err.message}`;
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
 interface SecDefResult {
   conid: number;
   symbol: string;
@@ -55,6 +78,25 @@ export class IBKRClient {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Initialize the brokerage session. Required after login — without this
+   * call, subsequent iserver/* endpoints (including scanner/run) can hang
+   * or return empty because the session is "auth'd but not initialized".
+   * Idempotent; safe to call repeatedly.
+   */
+  async initBrokerageSession(): Promise<void> {
+    await this.http.get('/v1/api/iserver/accounts');
+  }
+
+  /**
+   * Keep the Client Portal session alive. Sessions idle out after ~6
+   * minutes without activity, so we tickle periodically from the server
+   * bootstrap rather than relying on scan traffic to hold them open.
+   */
+  async tickle(): Promise<void> {
+    await this.http.post('/v1/api/tickle');
   }
 
   async resolveConid(symbol: string): Promise<number> {

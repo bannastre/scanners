@@ -10,10 +10,10 @@
   "dependencies": {
     "@koa/router": "^13.1.0",
     "axios": "^1.7.9",
-    "expr-eval": "^2.0.2",
     "js-yaml": "^4.1.0",
     "koa": "^2.15.3",
     "koa-static": "^5.0.0",
+    "mathjs": "^15.2.0",
     "technicalindicators": "^3.1.0"
   },
   "devDependencies": {

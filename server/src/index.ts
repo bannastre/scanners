@@ -4,7 +4,7 @@ import serve from 'koa-static';
 import { PassThrough } from 'stream';
 import path from 'path';
 import { loadConfig } from './config';
-import { IBKRClient } from './ibkr';
+import { IBKRClient, formatAxiosError } from './ibkr';
 import { runScanner } from './scanner';
 import { ScanResult } from './types';
 
@@ -30,17 +30,51 @@ async function scanLoop(name: string, refreshSeconds: number, run: () => Promise
     try {
       broadcast(await run());
     } catch (err) {
-      console.error(`[${name}]`, err);
+      console.error(`[${name}] ${formatAxiosError(err)}`);
     }
     await new Promise(r => setTimeout(r, refreshSeconds * 1_000));
   }
 }
 
-for (const scanner of config.scanners) {
-  scanLoop(scanner.name, scanner.refreshSeconds, () => runScanner(scanner, ibkr)).catch(
-    err => console.error(`[${scanner.name}] fatal:`, err),
-  );
+/**
+ * Tickle + brokerage-session init. Runs on startup and every 60s after,
+ * so a running scanner keeps the CP session alive indefinitely and
+ * auto-recovers if auth state flips mid-run (e.g. user logs back in).
+ * Both calls are idempotent.
+ */
+async function keepalive(): Promise<void> {
+  try {
+    await ibkr.tickle();
+    await ibkr.initBrokerageSession();
+  } catch (err) {
+    console.warn(`keepalive: ${formatAxiosError(err)}`);
+  }
 }
+
+async function bootstrap() {
+  const authed = await ibkr.checkAuth();
+  if (authed) {
+    await keepalive();
+    console.log(`Authenticated with IBKR Client Portal Gateway at ${config.ibkr.baseUrl}`);
+  } else {
+    console.warn('');
+    console.warn('  Not authenticated with IBKR Client Portal Gateway.');
+    console.warn(`  → Visit ${config.ibkr.baseUrl} in a browser, accept the self-signed`);
+    console.warn('    certificate, and log in with your IBKR credentials.');
+    console.warn('  Scan loops will keep retrying — they will succeed once the session is live.');
+    console.warn('');
+  }
+
+  setInterval(keepalive, 60_000);
+
+  for (const scanner of config.scanners) {
+    scanLoop(scanner.name, scanner.refreshSeconds, () => runScanner(scanner, ibkr)).catch(
+      err => console.error(`[${scanner.name}] fatal: ${formatAxiosError(err)}`),
+    );
+  }
+}
+
+bootstrap();
 
 // --- Koa --------------------------------------------------------------------
 
