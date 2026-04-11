@@ -6,20 +6,33 @@ import argparse
 import sys
 from pathlib import Path
 
+import uvicorn
+
 from .config import load_config
-from .tui import ScannerApp
+from .web import create_app
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="ibscanner",
-        description="Stock market scanner TUI for Interactive Brokers.",
+        description="Stock market scanner web app for Interactive Brokers.",
     )
     parser.add_argument(
         "-c",
         "--config",
         default="scanners.yaml",
         help="path to scanners YAML config (default: ./scanners.yaml)",
+    )
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="host to bind to (default: 0.0.0.0)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="port to listen on (default: 8000)",
     )
     args = parser.parse_args()
 
@@ -37,7 +50,7 @@ def main() -> None:
         print("no scanners defined in config", file=sys.stderr)
         sys.exit(1)
 
-    ScannerApp(config).run()
+    uvicorn.run(create_app(config), host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

@@ -1,11 +1,12 @@
 [project]
 name = "ibscanner"
-version = "0.1.0"
-description = "Stock market scanner TUI for Interactive Brokers"
+version = "0.2.0"
+description = "Stock market scanner web app for Interactive Brokers"
 requires-python = ">=3.10"
 dependencies = [
     "ib_async>=1.0.3",
-    "textual>=0.85",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
     "pandas>=2.1",
     "ta>=0.11",
     "pyyaml>=6.0",

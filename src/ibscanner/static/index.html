@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBKR Scanners</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+h1 { font-size: 1em; color: #58a6ff; letter-spacing: 0.05em; }
+
+#status {
+    font-size: 0.8em;
+    padding: 3px 10px;
+    border-radius: 10px;
+    background: #21262d;
+}
+#status.connected    { color: #3fb950; }
+#status.disconnected { color: #f85149; }
+#status.connecting   { color: #d29922; }
+
+nav {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.tab-btn {
+    padding: 8px 18px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #8b949e;
+    font-family: inherit;
+    font-size: 0.9em;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+}
+.tab-btn:hover  { color: #c9d1d9; }
+.tab-btn.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+#panes { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+.pane { display: none; flex: 1; overflow: hidden; flex-direction: column; padding: 12px 16px; }
+.pane.active { display: flex; }
+
+.summary {
+    color: #8b949e;
+    font-size: 0.8em;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+    min-height: 1.2em;
+}
+
+.table-wrap { flex: 1; overflow-y: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+
+thead th {
+    text-align: left;
+    padding: 6px 12px;
+    background: #161b22;
+    color: #8b949e;
+    font-weight: normal;
+    border-bottom: 1px solid #30363d;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+tbody td { padding: 5px 12px; border-bottom: 1px solid #21262d; }
+
+tbody tr:nth-child(even) { background: #0d1117; }
+tbody tr:nth-child(odd)  { background: #161b22; }
+tbody tr.matched td { color: #3fb950; }
+tbody tr.unmatched td { color: #6e7681; }
+</style>
+</head>
+<body>
+<header>
+    <h1>IBKR Scanners</h1>
+    <span id="status" class="connecting">connecting…</span>
+</header>
+<nav id="tabs"></nav>
+<div id="panes"></div>
+
+<script>
+const tabsEl  = document.getElementById('tabs');
+const panesEl = document.getElementById('panes');
+const statusEl = document.getElementById('status');
+
+let scanners = [];
+
+function slug(name) {
+    return name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+}
+
+function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = cls;
+}
+
+function switchTab(id) {
+    tabsEl.querySelectorAll('.tab-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.id === id));
+    panesEl.querySelectorAll('.pane').forEach(p =>
+        p.classList.toggle('active', p.id === `pane-${id}`));
+}
+
+function buildUI() {
+    scanners.forEach((scanner, i) => {
+        const id = slug(scanner.name);
+
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+        btn.textContent = scanner.name;
+        btn.dataset.id = id;
+        btn.addEventListener('click', () => switchTab(id));
+        tabsEl.appendChild(btn);
+
+        const pane = document.createElement('div');
+        pane.className = 'pane' + (i === 0 ? ' active' : '');
+        pane.id = `pane-${id}`;
+
+        const summary = document.createElement('div');
+        summary.className = 'summary';
+        summary.id = `summary-${id}`;
+        summary.textContent = 'waiting for first scan…';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'table-wrap';
+
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const hr = document.createElement('tr');
+        ['Symbol', '✓', ...scanner.columns, 'Note'].forEach(col => {
+            const th = document.createElement('th');
+            th.textContent = col;
+            hr.appendChild(th);
+        });
+        thead.appendChild(hr);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        tbody.id = `tbody-${id}`;
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+
+        pane.appendChild(summary);
+        pane.appendChild(wrap);
+        panesEl.appendChild(pane);
+    });
+}
+
+function applyUpdate(data) {
+    const id = slug(data.name);
+    const tbody = document.getElementById(`tbody-${id}`);
+    const summary = document.getElementById(`summary-${id}`);
+    if (!tbody) return;
+
+    const scanner = scanners.find(s => s.name === data.name);
+    if (!scanner) return;
+
+    tbody.innerHTML = '';
+
+    if (data.error) {
+        summary.textContent = `${data.name}  |  error: ${data.error}`;
+        return;
+    }
+
+    data.rows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = row.matched ? 'matched' : 'unmatched';
+
+        [row.symbol, row.matched ? '✓' : '', ...scanner.columns.map(c => row.cells[c] ?? '—'), row.error || '']
+            .forEach(val => {
+                const td = document.createElement('td');
+                td.textContent = val;
+                tr.appendChild(td);
+            });
+
+        tbody.appendChild(tr);
+    });
+
+    summary.textContent =
+        `${data.name}  |  symbols: ${data.rows.length}  |  matches: ${data.matches}` +
+        `  |  refresh: ${scanner.refresh_seconds}s  |  last: ${data.ran_at} (${data.duration_s}s)`;
+}
+
+function connectStream() {
+    const es = new EventSource('/api/stream');
+
+    es.addEventListener('scanner_update', e => {
+        setStatus('connected', 'connected');
+        applyUpdate(JSON.parse(e.data));
+    });
+
+    es.onerror = () => {
+        setStatus('reconnecting…', 'disconnected');
+        es.close();
+        setTimeout(connectStream, 5000);
+    };
+}
+
+async function init() {
+    try {
+        const res = await fetch('/api/scanners');
+        if (!res.ok) throw new Error(res.statusText);
+        scanners = await res.json();
+    } catch (e) {
+        setStatus('failed to load config', 'disconnected');
+        return;
+    }
+    buildUI();
+    connectStream();
+}
+
+init();
+</script>
+</body>
+</html>
