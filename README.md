@@ -1,167 +1,193 @@
 # ibscanner
 
-A real-time stock scanner for **Interactive Brokers**. Define one or more
-scanners in YAML — each either a fixed watchlist with custom indicator
-rules, or a universe-wide IBKR market scan — and watch the results stream
-into a React front-end over Server-Sent Events. Each scanner refreshes on
-its own interval.
+A real-time stock scanner for **Interactive Brokers**. Define scanners in
+YAML — fixed watchlists with custom indicator rules, or universe-wide
+IBKR market scans — and watch the results cycle in a React UI. Each
+scanner refreshes on its own interval. Everything runs in the browser;
+there is no backend.
 
 ## Stack
 
 ```
-┌─────────┐    SSE    ┌─────────┐   HTTPS   ┌──────────────┐   HTTPS   ┌─────────────┐
-│  React  │◀──────────│   Koa   │──────────▶│ Client Portal│──────────▶│ IBKR cloud  │
-│ client  │           │  server │           │   Gateway    │           │             │
-└─────────┘           └─────────┘           └──────────────┘           └─────────────┘
- client/                server/               localhost:5000
-                                              (you run this
-                                              alongside ibscanner)
+┌─────────────────────┐       HTTPS        ┌──────────────────┐   HTTPS   ┌─────────────┐
+│  React app (Vite)   │───────────────────▶│  Client Portal   │──────────▶│ IBKR cloud  │
+│  localhost:5173     │                    │  Gateway         │           │             │
+│  (dev server)       │                    │  localhost:5001  │           │             │
+└─────────────────────┘                    └──────────────────┘           └─────────────┘
+   │
+   ├─ parses scanner config in-browser (js-yaml)
+   ├─ fetches bars + scanner results directly (fetch)
+   ├─ computes indicators in-browser (technicalindicators)
+   ├─ evaluates filter expressions (filtrex)
+   └─ runs each scanner on its own setInterval loop
 ```
 
-- **Server** — TypeScript + Koa, REST client against IBKR's Client Portal
-  Web API. Runs one scan loop per scanner and broadcasts results to SSE
-  subscribers.
-- **Client** — React, subscribes to `/api/stream`, renders one tab per
-  scanner.
-- **Indicators** — [`technicalindicators`](https://www.npmjs.com/package/technicalindicators)
-  (SMA, EMA, RSI, MACD, Bollinger, ATR).
-- **Expression eval** — [`mathjs`](https://mathjs.org/), with the
-  runtime-reaching functions (`import`, `createUnit`, `evaluate`, `parse`,
-  `simplify`, `derivative`) stubbed out so user-authored YAML expressions
-  are sandboxed.
-- **YAML config** — [`js-yaml`](https://www.npmjs.com/package/js-yaml).
+- **UI** — React 18 + Vite. Tabs-and-table layout, one tab per scanner
+  plus an in-app YAML config editor.
+- **Indicators** —
+  [`technicalindicators`](https://www.npmjs.com/package/technicalindicators)
+  (SMA, EMA, RSI, MACD, Bollinger Bands, ATR).
+- **Expression eval** —
+  [`filtrex`](https://www.npmjs.com/package/filtrex) (~5KB). User-
+  authored filter expressions are compiled against a named-value scope
+  with no access to globals or the runtime.
+- **YAML config** —
+  [`js-yaml`](https://www.npmjs.com/package/js-yaml). Config is edited
+  in-app and persisted to `localStorage`.
 
 ## Prerequisites
 
 - **Node 20+**
 - **An Interactive Brokers account.** A paper-trading account is free
-  after you sign up at <https://www.interactivebrokers.com/> and gives
-  you everything you need for development.
-- **Client Portal Gateway** (see [Auth](#auth)) — a Java bundle IBKR
-  ships separately that terminates a local REST endpoint for the Web
-  API.
+  after sign-up at <https://www.interactivebrokers.com/> and gives you
+  everything needed for development.
+- **Client Portal Gateway** — a Java bundle IBKR ships separately that
+  terminates a local REST endpoint for the Web API. See
+  [Gateway setup](#gateway-setup).
 
 ## Install
 
 ```bash
-# server
-cd server && npm install && npm run build
-
-# client (in a second terminal, or sequentially)
-cd client && npm install && npm run build
+cd client && npm install
 ```
 
-## Auth
+## Gateway setup
 
-IBKR's Web API does **not** expose a retail-accessible always-on cloud
-endpoint. All REST calls for non-institutional accounts go through
-**Client Portal Gateway** — a Java app you run locally that handles
-session auth, terminates its own TLS on `https://localhost:5000`, and
-proxies your REST calls, upgraded to an authenticated session, to IBKR's
-cloud.
+IBKR's Web API does **not** expose a retail-accessible cloud endpoint.
+All REST calls go through **Client Portal Gateway** — a Java app you run
+locally that handles session auth, terminates TLS on
+`https://localhost:5001`, and proxies requests to IBKR's cloud.
 
-```
-ibscanner  →  https://localhost:5000  →  IBKR cloud
-              (Client Portal Gateway,
-               running + browser-authed)
-```
+### Download
 
-### One-time gateway setup
-
-1. Download **Client Portal Gateway** from IBKR. On the IBKR site navigate
-   to *Trading → Tools → APIs → Client Portal API* and grab
-   `clientportal.gw.zip`. (The download URL changes; search "IBKR Client
-   Portal Gateway" if in doubt.)
-2. Unzip it wherever you keep tools:
+1. On the IBKR site, navigate to *Trading > Tools > APIs > Client Portal
+   API* and download `clientportal.gw.zip`. (The URL changes; search
+   "IBKR Client Portal Gateway" if in doubt.)
+2. Unzip:
    ```bash
    unzip clientportal.gw.zip -d ~/ibkr-gateway
    ```
 
-### Running the gateway
+### Configure CORS
 
-You need to start the gateway and log in every time you use ibscanner
-(or whenever the session expires):
+The React app makes `fetch()` calls from `http://localhost:5173` (Vite
+dev server) to the gateway on a different port. The gateway must allow
+this origin.
+
+Edit `~/ibkr-gateway/root/conf.yaml`:
+
+```yaml
+ips:
+  allow:
+    - 127.0.0.1
+cors: "*"            # or "http://localhost:5173" for tighter lockdown
+```
+
+### Run the gateway
 
 ```bash
-cd ~/ibkr-gateway && bin/run.sh root/conf.yaml     # macOS/Linux
+cd ~/ibkr-gateway && bin/run.sh root/conf.yaml     # macOS / Linux
 # or: bin\run.bat root\conf.yaml                    # Windows
 ```
 
-You should see log lines ending in something like `App demo started` and
-a listener on port 5000.
+You should see log lines ending with a listener on port 5001.
 
-Then **open `https://localhost:5000` in a browser**, click through the
-self-signed certificate warning, and log in with your IBKR credentials
-(paper account works). You should see "Client login succeeds".
+### Log in
 
-### Verifying auth
+Open `https://localhost:5001` in the **same browser** where you'll use
+ibscanner. Accept the self-signed certificate warning, then log in with
+your IBKR credentials (paper account works).
 
-From a terminal:
+> **Same browser** matters — the gateway session is cookie-based and
+> ibscanner reuses it via `credentials: 'include'` on every `fetch()`.
+
+### Verify
 
 ```bash
-curl -sk https://localhost:5000/v1/api/iserver/auth/status | jq
+curl -sk https://localhost:5001/v1/api/iserver/auth/status | jq
 # { "authenticated": true, "connected": true, "competing": false, ... }
 ```
 
 If `authenticated: false`, go back to the browser and log in. If the
-request hangs or errors with "connection refused", the gateway process
-isn't running.
+request hangs or errors with "connection refused", the gateway isn't
+running.
 
 ### Session lifetime
 
 Client Portal sessions idle out after about **6 minutes** without
 activity. ibscanner automatically:
 
-- Calls `GET /v1/api/iserver/accounts` on startup and every 60s to
-  initialize the brokerage session (required once after login — without
-  it, `iserver/*` endpoints can hang or return empty even when
-  `auth/status` reports `authenticated: true`).
+- Calls `GET /v1/api/iserver/accounts` every 60s to initialize the
+  brokerage session (required once after login — without it,
+  `iserver/*` endpoints can hang even when `auth/status` reports
+  `authenticated: true`).
 - `POST /v1/api/tickle` every 60s as a keepalive.
 
-So a running ibscanner holds its own session alive indefinitely as long
-as the gateway process stays up. If you quit the gateway or log out of
-the browser tab, ibscanner will log concise timeouts until you restore
-the session — no ibscanner restart needed.
+So a running ibscanner holds its own session alive indefinitely. If you
+quit the gateway or log out of the browser tab, ibscanner surfaces a
+"not authenticated" banner and pauses scanner loops until you restore
+the session — no reload needed.
 
 ### OAuth / institutional access
 
-IBKR does offer OAuth 1.0a access that avoids the local gateway, but it
-is gated behind IBKR's formal **Third Party Platform** application
-process and is **not available** to personal or small-volume retail
-projects. Don't go down that path unless you are building something IBKR
-will approve as a registered platform.
+IBKR offers OAuth 1.0a access that avoids the local gateway, but it is
+gated behind a formal **Third Party Platform** application process and
+is **not available** to personal or small-volume retail projects.
 
 ### Containerization
 
 Client Portal Gateway is not natively container-friendly — the daily
 browser login is the main obstacle. The community solution is
 **[voyz/ibeam](https://github.com/voyz/ibeam)**, a Docker image that
-bundles the gateway with a headless Chrome that auto-logs in using
+bundles the gateway with headless Chrome for auto-login using
 `IBEAM_ACCOUNT` / `IBEAM_PASSWORD` env vars.
 
-For a future hosted deployment of ibscanner, run ibeam in a sibling
-container and point `ibkr.base_url` at it — the REST shape is identical
-because ibeam *is* the Client Portal Gateway, just wrapped. No ibscanner
-code changes.
+For hosted deployment, serve the ibscanner `dist/` as static files and
+point `ibkr.base_url` in the config at the ibeam container's address.
+The REST surface is identical because ibeam *is* the gateway, just
+wrapped.
 
-**2FA caveat**: if your IBKR account requires 2FA on API login, ibeam has
+**2FA caveat**: if your account requires 2FA on API login, ibeam has
 workarounds (mobile-app confirmation, TOTP) but they are fiddly. Check
-ibeam's docs before committing.
+ibeam's docs first.
+
+## Run
+
+```bash
+# terminal 1 — start the gateway
+cd ~/ibkr-gateway && bin/run.sh root/conf.yaml
+
+# browser — https://localhost:5001 → log in (once per session)
+
+# terminal 2 — start ibscanner
+cd client && npm run dev    # Vite at http://localhost:5173
+```
+
+Open `http://localhost:5173`. If the gateway is authenticated you'll see
+scanner results cycling. If not, the header will read "not authenticated
+— visit https://localhost:5001".
+
+For a production build:
+
+```bash
+cd client && npm run build   # outputs dist/
+```
+
+The `dist/` folder is a static bundle — serve it from any web server,
+S3 bucket, or `file://` path.
 
 ## Configure scanners
 
-```bash
-cp server/scanners.example.yaml server/scanners.yaml
-$EDITOR server/scanners.yaml
-```
+Click the **⚙ config** tab in the app to edit the YAML config. Changes
+are validated against the parser before saving and persisted to
+`localStorage` under the key `ibscanner.config.yaml`. A bundled default
+config ships with the app for first-run.
 
 ### Top-level shape
 
 ```yaml
 ibkr:
-  base_url: https://localhost:5000   # or your ibeam container URL
-
-theme: monokai                        # optional React UI theme
+  base_url: https://localhost:5001   # or your ibeam container URL
 
 scanners:
   - name: ...
@@ -186,7 +212,7 @@ scanners:
   columns: [close, rsi_14, volume, pct_change, sma_20]
 ```
 
-For each symbol, the server fetches historical bars, computes indicators,
+For each symbol, ibscanner fetches historical bars, computes indicators,
 and evaluates every `conditions` expression. All conditions must be true
 for the symbol to be marked as a match.
 
@@ -198,41 +224,40 @@ for the symbol to be marked as a match.
   scan_code: TOP_PERC_GAIN
   instrument: STK
   location_code: STK.US.MAJOR
-  refresh_seconds: 10
+  refresh_seconds: 30
   filters:
     priceAbove: 2
     priceBelow: 12
     changePercAbove: 10
-    stVolumeVsAvg10minAbove: 0.499
+    volumeVsAvgAbove: 500
   post_conditions:
     - rsi_14 < 70
   columns: [close, pct_change, volume_ratio, rsi_14]
 ```
 
-`scan_code`, `instrument`, `location_code`, and the `filters` keys all
-come from IBKR's scanner parameter catalog. To dump the catalog, hit
-`GET /v1/api/iserver/scanner/params` against the running gateway and
-pipe the response through `jq`.
+`scan_code`, `instrument`, `location_code`, and the `filters` keys come
+from IBKR's scanner parameter catalog. To dump it:
+
+```bash
+curl -sk https://localhost:5001/v1/api/iserver/scanner/params | jq
+```
 
 Common scan codes: `TOP_PERC_GAIN`, `TOP_PERC_LOSE`, `HOT_BY_VOLUME`,
-`MOST_ACTIVE`, `SCAN_stVolumeVsAvg10min_DESC`.
+`MOST_ACTIVE`.
 
-When `post_conditions` are set (or `enrich: true`, the default), the
-server fetches per-result historical bars and evaluates the expressions
-on top of the IBKR filter. Without enrichment, an `ibkr_scan` row is
-just symbol + rank — IBKR's stock scan endpoint does not return
-projection/last/volume for stocks.
+When `post_conditions` are set (or `enrich: true`, the default),
+ibscanner fetches per-result historical bars and evaluates the
+expressions. Without enrichment, an `ibkr_scan` row is just symbol +
+rank.
 
-> **Note on cadence.** IBKR's scanner refreshes server-side roughly
-> every 30 seconds. `refresh_seconds: 10` will often return identical
-> data — useful for tight iteration during dev, wasteful in steady
-> state.
+> **Cadence note.** IBKR's scanner refreshes server-side roughly every
+> 30s. Lower `refresh_seconds` will often return identical data.
 
 ### Expression reference
 
 Both `conditions` (watchlist) and `post_conditions` (ibkr_scan) are
-mathjs expressions evaluated against the latest bar's indicator values.
-Variables available (from `server/src/indicators.ts`):
+[filtrex](https://www.npmjs.com/package/filtrex) expressions evaluated
+against the latest bar's indicator values. Available names:
 
 ```
 close, open, high, low, volume
@@ -246,11 +271,11 @@ volume_sma_20, volume_ratio
 pct_change
 ```
 
-Each variable also has a `prev_` prefixed version for the previous bar
-(e.g. `prev_rsi_14`, `prev_macd`) so you can express crosses.
+Each variable also has a `prev_` prefix for the previous bar (e.g.
+`prev_rsi_14`, `prev_macd`) so you can express crosses.
 
-Operators: `<`, `>`, `<=`, `>=`, `==`, `!=`, `+`, `-`, `*`, `/`, `^`,
-plus `and` / `or` / `not`, grouped with parentheses. Examples:
+Operators: `<`, `>`, `<=`, `>=`, `==`, `!=`, `+`, `-`, `*`, `/`,
+`and`, `or`, `not`, grouped with parentheses. Examples:
 
 ```yaml
 conditions:
@@ -267,101 +292,56 @@ conditions:
   - close > prev_close
 ```
 
-All conditions in a scanner are AND-ed by the engine.
-
-The mathjs instance is locked down — `import`, `createUnit`, `evaluate`,
-`parse`, `simplify`, `derivative` are disabled — so user-authored YAML
-cannot reach the runtime.
-
-## Run
-
-```bash
-# terminal 1 — start the gateway
-cd ~/ibkr-gateway && bin/run.sh root/conf.yaml
-
-# browser — https://localhost:5000 → log in (once per session)
-
-# terminal 2 — start ibscanner
-cd server && npm start
-```
-
-Startup log on success:
-
-```
-ibscanner listening on http://localhost:8000
-IBKR Client Portal API: https://localhost:5000
-Config: scanners.yaml (3 scanners)
-Authenticated with IBKR Client Portal Gateway at https://localhost:5000
-```
-
-On failure:
-
-```
-  Not authenticated with IBKR Client Portal Gateway.
-  → Visit https://localhost:5000 in a browser, accept the self-signed
-    certificate, and log in with your IBKR credentials.
-  Scan loops will keep retrying — they will succeed once the session is live.
-
-[small-cap-momentum] POST /v1/api/iserver/scanner/run → timeout after 30000ms (is the IBKR Client Portal Gateway authenticated? visit https://localhost:5000 and log in)
-```
-
-Open the browser tab, log in, and the next scan cycle will start
-succeeding — no ibscanner restart.
-
-### Client dev server
-
-For front-end development with hot reload:
-
-```bash
-cd client && npm run dev    # Vite at http://localhost:5173
-```
-
-In production, the built client is served from the Koa server at
-`http://localhost:8000`.
+All conditions in a scanner are AND-ed.
 
 ## Project layout
 
 ```
 scanners/
-├── README.md                       ← you are here
-├── server/
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── scanners.yaml               ← your local config (gitignored)
-│   ├── scanners.example.yaml       ← template
-│   └── src/
-│       ├── index.ts                ← Koa entry; SSE broadcast; keepalive
-│       ├── config.ts               ← YAML loader → typed AppConfig
-│       ├── ibkr.ts                 ← Client Portal REST wrapper
-│       ├── indicators.ts           ← OHLCV → indicator values
-│       ├── scanner.ts              ← runs each scanner; mathjs eval
-│       └── types.ts
+├── README.md
+├── plan.md                         ← architecture plan and roadmap
 └── client/
     ├── package.json
+    ├── tsconfig.json
+    ├── vite.config.ts
+    ├── index.html
     └── src/
-        ├── main.js
-        ├── App.js
-        ├── types.js
+        ├── main.tsx                ← React entry
+        ├── App.tsx                 ← config parsing, auth, tab router
+        ├── index.css               ← dark theme
+        ├── hooks/
+        │   ├── useAuthStatus.ts    ← 60s auth poll + session keepalive
+        │   └── useScanner.ts       ← per-scanner refresh loop
+        ├── lib/
+        │   ├── types.ts            ← shared data shapes
+        │   ├── config.ts           ← YAML parser → typed AppConfig
+        │   ├── ibkr.ts             ← Client Portal REST wrapper (fetch)
+        │   ├── indicators.ts       ← OHLCV → indicator values
+        │   ├── scanner.ts          ← runs each scanner; filtrex eval
+        │   └── defaultConfig.ts    ← bundled first-run YAML
         └── components/
-            └── ScannerPane.js
+            ├── ScannerPane.tsx      ← table view per scanner
+            └── ConfigEditor.tsx     ← in-app YAML editor
 ```
 
 ## Caveats
 
 - **Retail auth only.** OAuth institutional access is not practical for
-  personal projects. For 24/7 deployment, run ibeam in Docker — see
+  personal projects. For 24/7 deployment, use ibeam — see
   [Containerization](#containerization).
-- **Historical bars on each cycle, not streaming.** The server
-  re-fetches bars on every refresh rather than holding a WebSocket
-  subscription. Fine for refresh intervals ≥ ~10s. A streaming mode
-  would be a worthwhile addition.
+- **Historical bars on each cycle, not streaming.** ibscanner re-fetches
+  bars on every refresh rather than holding a WebSocket subscription.
+  Fine for intervals >= ~10s. A streaming mode would be a worthwhile
+  addition.
 - **Sequential fetches within a scanner.** Symbols in a watchlist are
-  resolved and fetched one at a time to stay polite with IBKR's rate
-  limits. Two scanners with overlapping symbols will fetch the same data
-  twice — shared cache is a future improvement.
+  resolved one at a time to stay polite with IBKR's rate limits. Two
+  scanners with overlapping symbols fetch the same data twice — a
+  shared cache is a future improvement.
 - **US equities only by default.** `secType: STK` is hardcoded in
   `ibkr.ts:resolveConid`. Extend there for FX, futures, or non-US
   stocks.
-- **No alerting.** Matches appear in the SSE stream and the React UI
-  only — no sound, webhook, or persistent log. Easy hook point inside
-  the `broadcast` function in `server/src/index.ts`.
+- **No alerting.** Matches appear in the UI only — no sound, webhook,
+  or persistent log.
+- **Self-signed cert.** The browser must have accepted the gateway's TLS
+  cert in the same session. If `fetch()` silently fails, revisit
+  `https://localhost:5001` and click through the warning.
