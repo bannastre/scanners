@@ -10,6 +10,7 @@
   --green:     #3fb950;
   --red:       #f85149;
   --yellow:    #d29922;
+  --orange:    #db6d28;
   --row-even:  #0d1117;
   --row-odd:   #161b22;
 }
@@ -182,3 +183,26 @@ tbody tr.unmatched td { color: #6e7681; }
   overflow: auto;
 }
 .yaml-editor:focus { border-color: var(--accent); }
+
+/* ── News dot (age-bucket indicator in the 'news' column) ── */
+.news-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  vertical-align: middle;
+  opacity: 0.9;
+  transition: opacity 0.12s, transform 0.12s;
+}
+.news-dot:hover { opacity: 1; transform: scale(1.2); }
+.news-dot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.news-dot.red    { background: var(--red);    }
+.news-dot.orange { background: var(--orange); }
+.news-dot.yellow { background: var(--yellow); }
+.news-dot.grey   { background: var(--muted);  }

@@ -28,7 +28,7 @@ export function parseConfig(yamlText: string): AppConfig {
 
   const ibkrRaw = (raw.ibkr ?? {}) as RawConfig;
   const ibkr: IBKRConfig = {
-    baseUrl: String(ibkrRaw.base_url ?? 'https://localhost:5000'),
+    baseUrl: String(ibkrRaw.base_url ?? ''),
   };
 
   const scanners: ScannerConfig[] = [];

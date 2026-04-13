@@ -52,11 +52,24 @@ export interface Bar {
   volume: number;
 }
 
+export interface NewsSummary {
+  /** Story id from /iserver/news. Used to open the body via /iserver/news/{id}. */
+  latestStoryId: string;
+  latestHeadline: string;
+  latestSource: string;
+  /** Epoch ms of the most recent story. */
+  latestDate: number;
+  /** Number of stories returned in the last fetch (within gateway's default window). */
+  count: number;
+}
+
 export interface ScanRow {
   symbol: string;
   matched: boolean;
   cells: Record<string, string>;
   error?: string;
+  /** Only populated when the scanner opted into news enrichment. */
+  news?: NewsSummary | null;
 }
 
 export interface ScanResult {

@@ -11,7 +11,7 @@ export const DEFAULT_CONFIG_YAML = `# ibscanner default config.
 #
 # Before this works:
 #   1. Start the IBKR Client Portal Gateway (Java bundle from IBKR).
-#   2. Visit https://localhost:5000 in this browser, accept the
+#   2. Visit https://localhost:5001 in this browser, accept the
 #      self-signed cert warning, and log in to your IBKR account.
 #   3. Leave that tab open — the session idles out after ~6 minutes
 #      without activity, and ibscanner will tickle it on your behalf.
@@ -22,8 +22,11 @@ export const DEFAULT_CONFIG_YAML = `# ibscanner default config.
 # bb_upper/bb_lower/bb_mid, atr_14, volume_sma_20, volume_ratio,
 # pct_change. Each also has a prev_ prefix for the previous bar.
 
+# In dev mode, leave base_url empty — Vite proxies /v1/api/* to the
+# gateway so the browser never hits the self-signed cert directly.
+# For production, set this to the gateway URL (e.g. https://localhost:5001).
 ibkr:
-  base_url: https://localhost:5001
+  base_url: ""
 
 scanners:
   - name: oversold-bounce
@@ -55,4 +58,35 @@ scanners:
       - macd > macd_signal
       - prev_macd <= prev_macd_signal
     columns: [close, macd, macd_signal, rsi_14]
+
+  # IBKR market-wide scanner — searches the full US equity universe
+  # filtered by price/change/volume, sorted by top % gain. With
+  # enrich: true (default), historical bars are fetched per result
+  # so indicator columns are populated.
+  - name: low-float-runners
+    type: ibkr_scan
+    scan_code: TOP_PERC_GAIN
+    instrument: STK
+    location_code: STK.US.MAJOR
+    refresh_seconds: 10
+    filters:
+      priceAbove: 2
+      priceBelow: 12
+      changePercAbove: 10
+      # Multiplier vs. average daily volume — 2 means "trading at
+      # 2x typical volume". The short-term variant (stVolumeVsAvg10min)
+      # requires an extra IBKR market-data entitlement and 500s
+      # without it.
+      volumeVsAvgAbove: 5
+      # Low-float runners: floats under 20M are the classic momentum
+      # setup (thin supply + a catalyst = outsized moves). Raise the
+      # floor above 1M to skip reverse-split shells with near-zero
+      # borrowable float. IBKR takes raw share counts.
+      floatSharesAbove: 1000000
+      floatSharesBelow: 20000000
+    # 'last' is the live traded price (IBKR snapshot field 31) — this is
+    # what priceAbove/priceBelow filter on, so it should always sit
+    # inside [2, 12]. 'close' is the last bar's close; on an intraday
+    # bar it lags 'last' by up to one bar interval.
+    columns: [news, close, last, pct_change, volume_ratio, macd, float]
 `;

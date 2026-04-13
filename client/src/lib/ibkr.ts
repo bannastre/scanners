@@ -64,14 +64,30 @@ interface HistoryResponse {
 
 interface ScannerResult {
   contracts: Array<{
-    conid: number;
+    // IBKR has shipped both `conid` and `con_id` across CP builds; accept
+    // either so snapshot/news lookups don't silently no-op when the
+    // gateway returns the underscored form.
+    conid?: number;
+    con_id?: number;
     symbol: string;
   }>;
+}
+
+/** Fundamentals (float, shares-outstanding, etc.) only move on corporate
+ *  actions — once per day is plenty. Cache per conid so a 10-second scan
+ *  loop doesn't hammer the gateway for data that changed weeks ago. */
+const FUNDAMENTALS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+interface FundamentalsSnapshot {
+  /** Share float (freely tradable shares), raw count. null if the
+   *  gateway didn't return a recognisable field for this conid. */
+  float: number | null;
 }
 
 export class IBKRClient {
   private baseUrl: string;
   private conidCache = new Map<string, number>();
+  private fundamentalsCache = new Map<number, { value: FundamentalsSnapshot; expiresAt: number }>();
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
@@ -82,7 +98,10 @@ export class IBKRClient {
     path: string,
     opts: { params?: Record<string, string | number | boolean>; body?: unknown } = {},
   ): Promise<T> {
-    const url = new URL(this.baseUrl + path);
+    // When baseUrl is empty (dev proxy mode) paths like /v1/api/... are
+    // relative to the current origin, which Vite proxies to the gateway.
+    const raw = this.baseUrl ? this.baseUrl + path : path;
+    const url = new URL(raw, window.location.origin);
     if (opts.params) {
       for (const [k, v] of Object.entries(opts.params)) {
         url.searchParams.set(k, String(v));
@@ -103,7 +122,23 @@ export class IBKRClient {
     }
 
     if (!res.ok) {
-      throw new IBKRError(res.statusText || 'request failed', res.status, `${method} ${path}`);
+      // IBKR frequently returns the real error in the response body
+      // (JSON with `error` / `message`, or plain text). Surface that so
+      // 500s don't show up as a blank "Internal Server Error".
+      const bodyText = await res.text().catch(() => '');
+      let detail = '';
+      if (bodyText) {
+        try {
+          const parsed = JSON.parse(bodyText);
+          detail = parsed?.error ?? parsed?.message ?? parsed?.errorMsg ?? bodyText;
+        } catch {
+          detail = bodyText;
+        }
+      }
+      const msg = detail
+        ? `${res.statusText || 'request failed'} — ${String(detail).slice(0, 300)}`
+        : res.statusText || 'request failed';
+      throw new IBKRError(msg, res.status, `${method} ${path}`);
     }
 
     // Some CP endpoints return 200 with empty body (e.g. tickle). Guard
@@ -211,10 +246,209 @@ export class IBKRClient {
 
     return (data.contracts ?? []).map((c, i) => ({
       symbol: c.symbol,
-      conid: c.conid,
+      conid: (c.conid ?? c.con_id) as number,
       rank: i + 1,
     }));
   }
+
+  /**
+   * Batched market-data snapshot. Field 31 is last price; other common
+   * fields are 84 (bid), 86 (ask), 82 (change), 83 (change %), 87 (volume).
+   *
+   * The CP snapshot endpoint famously returns partial data on the first
+   * call after a fresh session — the gateway subscribes to the feed on
+   * call 1 and only populates on call 2+. Callers that need a warm
+   * response should accept that the first tick of a scan cycle may come
+   * back blank for a new conid.
+   */
+  async fetchSnapshot(
+    conids: number[],
+    fields: number[] = [31],
+  ): Promise<Record<number, Record<string, string>>> {
+    if (!conids.length) return {};
+    const data = await this.json<Array<Record<string, string>>>(
+      'GET',
+      '/v1/api/iserver/marketdata/snapshot',
+      {
+        params: {
+          conids: conids.join(','),
+          fields: fields.join(','),
+        },
+      },
+    );
+    const out: Record<number, Record<string, string>> = {};
+    for (const row of data ?? []) {
+      const conid = Number(row.conid ?? row.conidex);
+      if (Number.isFinite(conid)) out[conid] = row;
+    }
+    return out;
+  }
+
+  /**
+   * Fetch the fundamentals summary for a conid, and distil out fields we
+   * care about (currently: float). Results are cached in-memory for
+   * FUNDAMENTALS_TTL_MS because these values don't move intraday — at
+   * refresh_seconds: 10 we'd otherwise hit the gateway needlessly.
+   *
+   * The CP "summary" endpoint's field names vary wildly across builds and
+   * across data providers (Reuters vs. Refinitiv vs. AltaVista), so the
+   * parser is intentionally defensive: it walks a list of known keys and
+   * takes the first that produces a parseable number. Values can be raw
+   * counts (45600000), scaled strings ("45.6M"), or nested objects —
+   * `coerceShareCount` handles each.
+   */
+  async fetchFundamentals(conid: number): Promise<FundamentalsSnapshot> {
+    const cached = this.fundamentalsCache.get(conid);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+    let raw: Record<string, unknown> = {};
+    try {
+      raw = await this.json<Record<string, unknown>>(
+        'GET',
+        `/v1/api/iserver/fundamentals/${conid}/summary`,
+      );
+    } catch {
+      // Fundamentals aren't life-or-death for a scan row; cache the miss
+      // briefly so we don't retry on every cycle.
+      const miss: FundamentalsSnapshot = { float: null };
+      this.fundamentalsCache.set(conid, {
+        value: miss,
+        expiresAt: Date.now() + 60_000,
+      });
+      return miss;
+    }
+
+    const floatKeys = [
+      'float',
+      'sharesFloat',
+      'freeFloat',
+      'FloatShares',
+      'FloatedShares',
+      'sharesFloating',
+      'NSHRFL',   // Refinitiv: number of shares floated
+      'NSHRFQ',   // Refinitiv quarterly variant
+    ];
+    let floatVal: number | null = null;
+    for (const k of floatKeys) {
+      floatVal = coerceShareCount((raw as Record<string, unknown>)[k]);
+      if (floatVal !== null) break;
+    }
+
+    const value: FundamentalsSnapshot = { float: floatVal };
+    this.fundamentalsCache.set(conid, {
+      value,
+      expiresAt: Date.now() + FUNDAMENTALS_TTL_MS,
+    });
+    return value;
+  }
+
+  /**
+   * Fetch news headlines for a given contract. Field names on the
+   * response vary slightly across CP API builds, so parsing is
+   * defensive — we coerce whichever of date / dateTime / datetime
+   * (epoch ms or ISO string) the gateway returns.
+   */
+  async fetchNews(conid: number, pageSize = 10): Promise<NewsItem[]> {
+    const data = await this.json<RawNewsItem[] | null>(
+      'GET',
+      '/v1/api/iserver/news',
+      { params: { conids: conid, pageSize } },
+    );
+
+    return (data ?? []).map(n => {
+      const rawDate = n.date ?? n.dateTime ?? n.datetime ?? n.updated ?? 0;
+      const date = typeof rawDate === 'number' ? rawDate : Date.parse(String(rawDate));
+      return {
+        id:       String(n.id ?? n.storyId ?? ''),
+        headline: String(n.headline ?? n.title ?? ''),
+        source:   String(n.source ?? n.provider ?? ''),
+        date:     Number.isFinite(date) ? date : 0,
+      };
+    });
+  }
+
+  /**
+   * Fetch the full body of a single news story. Returns whatever the
+   * gateway provides — typically an object with a `body` HTML field —
+   * so the caller can render or inject as it sees fit.
+   */
+  async fetchStory(storyId: string): Promise<NewsStory> {
+    return this.json<NewsStory>(
+      'GET',
+      `/v1/api/iserver/news/${encodeURIComponent(storyId)}`,
+    );
+  }
+}
+
+/** Wire format for a news list item — fields vary between builds. */
+interface RawNewsItem {
+  id?: string;
+  storyId?: string;
+  headline?: string;
+  title?: string;
+  source?: string;
+  provider?: string;
+  date?: number | string;
+  dateTime?: number | string;
+  datetime?: number | string;
+  updated?: number | string;
+}
+
+export interface NewsItem {
+  id: string;
+  headline: string;
+  source: string;
+  date: number; // epoch ms
+}
+
+export interface NewsStory {
+  body?: string;
+  headline?: string;
+  source?: string;
+  date?: number | string;
+  [key: string]: unknown;
+}
+
+/**
+ * Coerce a fundamentals field (raw count, scaled string, or nested object)
+ * into a number of shares. Returns null if the value isn't recognisable.
+ * Handles: 45600000, "45600000", "45.6M", "45.6m", "45.6 million",
+ * "456,000,000", { value: 45.6, unit: "M" }.
+ */
+function coerceShareCount(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'number') return Number.isFinite(v) && v > 0 ? v : null;
+
+  if (typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    const base = coerceShareCount(o.value ?? o.amount ?? o.raw);
+    if (base === null) return null;
+    const unit = String(o.unit ?? o.scale ?? '').toLowerCase();
+    const mul =
+      unit.startsWith('b') ? 1e9 :
+      unit.startsWith('m') ? 1e6 :
+      unit.startsWith('k') || unit.startsWith('t') ? 1e3 :
+      1;
+    return base * mul;
+  }
+
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    if (!s) return null;
+    const m = s.match(/^([+-]?[\d,]*\.?\d+)\s*(b|bn|billion|m|mil|million|k|thousand)?/);
+    if (!m) return null;
+    const n = Number(m[1].replace(/,/g, ''));
+    if (!Number.isFinite(n)) return null;
+    const unit = m[2] ?? '';
+    const mul =
+      unit.startsWith('b') ? 1e9 :
+      unit.startsWith('m') ? 1e6 :
+      unit.startsWith('k') || unit.startsWith('t') ? 1e3 :
+      1;
+    return n * mul;
+  }
+
+  return null;
 }
 
 /** Convert IB-style duration ("2 D", "30 D") to Client Portal period ("2d", "1m"). */

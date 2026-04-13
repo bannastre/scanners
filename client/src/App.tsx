@@ -30,7 +30,7 @@ export default function App() {
   // hook call stays unconditional. Base URL falls back to the gateway
   // default; if parsing failed the user will see the error banner and
   // nothing will actually hit the network.
-  const baseUrl = parsed.config?.ibkr.baseUrl ?? 'https://localhost:5001';
+  const baseUrl = parsed.config?.ibkr.baseUrl ?? '';
   const ibkr = useMemo(() => new IBKRClient(baseUrl), [baseUrl]);
   const { authenticated, checked } = useAuthStatus(ibkr);
 
@@ -90,7 +90,7 @@ export default function App() {
     ? 'checking gateway…'
     : authenticated
       ? 'connected'
-      : `not authenticated — visit ${baseUrl}`;
+      : `not authenticated — visit ${baseUrl || 'https://localhost:5001'}`;
   const statusClass = !checked ? 'connecting' : authenticated ? 'connected' : 'disconnected';
 
   return (
