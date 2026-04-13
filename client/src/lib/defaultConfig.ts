@@ -22,11 +22,14 @@ export const DEFAULT_CONFIG_YAML = `# ibscanner default config.
 # bb_upper/bb_lower/bb_mid, atr_14, volume_sma_20, volume_ratio,
 # pct_change. Each also has a prev_ prefix for the previous bar.
 
-# In dev mode, leave base_url empty — Vite proxies /v1/api/* to the
-# gateway so the browser never hits the self-signed cert directly.
-# For production, set this to the gateway URL (e.g. https://localhost:5001).
+# Browser calls the gateway directly at base_url. Cookies set by the
+# gateway login are origin-scoped to https://localhost:5001, so the
+# fetch target has to match that origin or the browser sends no cookies
+# and every request reads as unauthenticated. Make sure the gateway's
+# CORS block (ibPortal/root/conf.yaml) names http://localhost:5173 and
+# sets allowCredentials: true.
 ibkr:
-  base_url: ""
+  base_url: "https://localhost:5001"
 
 scanners:
   - name: oversold-bounce
