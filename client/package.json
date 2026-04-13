@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "start": "bash ../scripts/start.sh",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

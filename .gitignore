@@ -26,3 +26,4 @@ node_modules/
 
 # IBKR Client Portal Gateway — third-party Java bundle, installed locally
 ibPortal/
+.gateway.log
