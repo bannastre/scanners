@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "start": "bash ../scripts/start.sh",
+    "stop": "bash ../scripts/stop.sh",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

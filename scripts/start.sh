@@ -51,13 +51,27 @@ wait_for_port() {
 }
 
 cleanup() {
-  if [[ -n "${GATEWAY_PID:-}" ]] && kill -0 "$GATEWAY_PID" 2>/dev/null; then
-    echo ""
-    echo "→ stopping gateway (pid $GATEWAY_PID)"
-    kill "$GATEWAY_PID" 2>/dev/null || true
-    # Give it a moment, then SIGKILL if it's still around.
-    sleep 1
-    kill -9 "$GATEWAY_PID" 2>/dev/null || true
+  # Trap can fire twice (once for INT, again for EXIT). Clear ourselves
+  # first so the second fire is a no-op.
+  trap - EXIT INT TERM
+
+  echo ""
+  echo "→ shutting down…"
+
+  # `npm run dev` spawns a node grandchild; killing only the direct
+  # child leaves vite bound to :5173 as a zombie. pkill -P matches on
+  # parent PID, so this takes out the whole subtree in one shot.
+  pkill -TERM -P $$ 2>/dev/null || true
+  sleep 1
+  pkill -KILL -P $$ 2>/dev/null || true
+
+  # Backstop: if anything's still sitting on our ports (e.g. a detached
+  # Java gateway that re-parented itself), kill it by port.
+  local stragglers
+  stragglers=$(lsof -t -i :5001 -i :5173 2>/dev/null || true)
+  if [[ -n "$stragglers" ]]; then
+    # shellcheck disable=SC2086  # want word-splitting on $stragglers
+    kill -9 $stragglers 2>/dev/null || true
   fi
 }
 trap cleanup EXIT INT TERM
