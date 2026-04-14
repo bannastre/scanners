@@ -93,4 +93,16 @@ scanners:
       changePercAbove: 10
       # floatSharesBelow: 20000000   # requires fundamentals subscription
       volumeVsAvgAbove: 500          # ~5× avg volume (see NOTE 3)
-    columns: [close, pct_change, volume, volume_ratio, market_name]
+    # Adding `news` in the columns list enables per-row news enrichment.
+    # The TUI renders a coloured dot by story age: red <2h, orange <8h,
+    # yellow <24h, grey <48h, nothing otherwise. Press `n` on a row to
+    # open the latest story body in a modal. Requires a news provider
+    # entitlement on your IBKR account (free Briefing.com tiers work).
+    #
+    # `last` pulls a live snapshot (via reqTickers) of the current last
+    # traded price — this is what IBKR's priceAbove/priceBelow filters
+    # match against server-side, so it's the canonical "why did this
+    # qualify?" number. `close` is the last historical-bar close, which
+    # lags (by up to one bar-size) and under delayed data can look off
+    # by dollars. Keep both if you want to see that gap.
+    columns: [news, close, last, pct_change, volume, volume_ratio, market_name]
