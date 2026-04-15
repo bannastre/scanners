@@ -9,59 +9,25 @@
 ib:
   host: 127.0.0.1
   # 7497 = TWS paper, 7496 = TWS live
-  # 4002 = IB Gateway paper, 4001 = IB Gateway live
-  port: 7497
-  client_id: 17
+  # port: 4002 # IB Gateway paper, 
+  port: 4001 # Gateway live
+  client_id: 101
   # 1=live, 2=frozen, 3=delayed, 4=delayed-frozen
   # Use 3 if you don't have live market data subscriptions.
-  market_data_type: 3
+  market_data_type: 1
 
-# The TUI is organised into tabs. Each tab has a left column with up to
-# 3 scanners stacked vertically (each with its own refresh interval)
-# and a right column showing fundamentals + news for whichever row is
-# currently highlighted. `left_ratio` (0.1–0.9, default 0.6) controls
-# how wide the scanner column is relative to the detail column.
-#
-# Available names per symbol come from the indicator pipeline
-# (see ibscanner/indicators.py): close, open, high, low, volume,
+# Each scanner refreshes on its own interval. The conditions list is
+# AND-ed together. Available names per symbol come from the indicator
+# pipeline (see ibscanner/indicators.py): close, open, high, low, volume,
 # sma_5/10/20/50/200, ema_9/12/26, rsi_14, macd, macd_signal, macd_hist,
 # bb_upper/bb_lower/bb_mid, atr_14, volume_sma_20, volume_ratio,
 # pct_change. Each one also has a `prev_` prefixed version for the
 # previous bar (e.g. prev_rsi_14) so you can express crosses.
+
 tabs:
   - name: Watchlists
     left_ratio: 0.6
     scanners:
-      - name: oversold-bounce
-        symbols: [AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AMD]
-        bar_size: "5 mins"
-        duration: "2 D"
-        refresh_seconds: 30
-        conditions:
-          - rsi_14 < 35
-          - close > sma_20 * 0.97
-        columns: [close, rsi_14, volume, pct_change, sma_20]
-
-      - name: volume-breakout
-        symbols: [SPY, QQQ, IWM, DIA]
-        bar_size: "1 min"
-        duration: "1 D"
-        refresh_seconds: 15
-        conditions:
-          - volume_ratio > 2
-          - close > prev_close
-        columns: [close, volume, volume_ratio, pct_change]
-
-      - name: macd-cross-up
-        symbols: [AAPL, MSFT, NVDA, AMD, TSLA]
-        bar_size: "15 mins"
-        duration: "5 D"
-        refresh_seconds: 60
-        conditions:
-          - macd > macd_signal
-          - prev_macd <= prev_macd_signal
-        columns: [close, macd, macd_signal, rsi_14]
-
   # IBKR-side market scanner. Unlike a watchlist scanner, this asks
   # IBKR's reqScannerSubscription to search the entire universe defined
   # by `instrument` + `location_code`, sorted by `scan_code`, narrowed
@@ -89,31 +55,45 @@ tabs:
   # `500` is more restrictive than `5`, consistent with the value being
   # a percentage of average volume (so 500 ≈ 5× avg). Verify against
   # your own data and adjust.
-  - name: Runners
-    left_ratio: 0.6
-    scanners:
       - name: low-float-runners
         type: ibkr_scan
         scan_code: TOP_PERC_GAIN
         instrument: STK
         location_code: STK.US.MAJOR
-        refresh_seconds: 30
-        max_results: 15
+        refresh_seconds: 10
         filters:
           priceAbove: 2
+          priceBelow: 8
+          changePercAbove: 30
+          # floatSharesBelow: 5000000   # requires fundamentals subscription
+          volumeVsAvgAbove: 0.48          # ~5× avg volume (see NOTE 3)
+    # Adding `news` in the columns list enables per-row news enrichment.
+    # The TUI renders a coloured dot by story age: red <2h, orange <8h,
+    # yellow <24h, grey <48h, nothing otherwise. Press `n` on a row to
+    # open the latest story body in a modal. Requires a news provider
+    # entitlement on your IBKR account (free Briefing.com tiers work).
+        columns: [news, last, pct_change, volume_ratio, macd]
+        alert_on_hot_news: true
+      
+      - name: gainers
+        type: ibkr_scan
+        scan_code: TOP_PERC_GAIN
+        instrument: STK
+        location_code: STK.US.MAJOR
+    # IBKR refreshes server-side ~every 30s, and enrichment work (bars +
+    # snapshot + news per row) is serialised, so a shorter interval just
+    # means the next kick gets skipped while the previous run is still
+    # in flight.
+        refresh_seconds: 30
+    # Cap enrichment fan-out. IBKR will return up to 50 results; at 3
+    # IB calls per row that's 150 requests, which blows through the
+    # ~60 historical-bar calls / 10 min pacing limit on the first fire.
+        max_results: 15
+        filters:
+          priceAbove: 1
           priceBelow: 12
+      # Narrow the server-side universe so enrichment only runs on rows
+      # that are actually interesting. Drop/lower this if you want a
+      # wider view and don't mind pacing waits.
           changePercAbove: 10
-          # floatSharesBelow: 20000000   # requires fundamentals subscription
-          volumeVsAvgAbove: 500          # ~5× avg volume (see NOTE 3)
-        # Adding `news` in the columns list enables per-row news enrichment.
-        # The news column renders age-bucketed labels: HOT! <2h, 8hrs <8h,
-        # 24hrs <24h, 48hrs <48h, nothing otherwise. The right-hand detail
-        # panel picks up the latest article body for whichever row is
-        # highlighted; press `n` to pop the fullscreen modal. Requires a
-        # news provider entitlement (free Briefing.com tier works).
-        #
-        # `last` pulls a live snapshot of the current last traded price —
-        # this is what IBKR's priceAbove/priceBelow filters match against
-        # server-side, so it's the canonical "why did this qualify?"
-        # number. `close` is the last historical-bar close which lags.
-        columns: [news, close, last, pct_change, volume, volume_ratio, market_name]
+        columns: [news, last, pct_change, volume, macd]
