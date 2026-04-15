@@ -5,6 +5,10 @@ from __future__ import annotations
 import asyncio
 import html
 import re
+import shutil
+import subprocess
+import sys
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -24,6 +28,58 @@ from textual.widgets import (
 from .config import AppConfig, ScannerConfig, TabConfig
 from .engine import NewsSummary, ScanRow, ScannerEngine, ScanResult
 from .ib_client import IBClient
+
+
+# macOS-only system sound used for new-HOT-news alerts. Ships with every
+# OS X install, so no bundled assets. On non-macOS we fall back to the
+# terminal bell, which is inaudible in most modern terminals — but also
+# harmless, so the code path is simpler than a conditional import.
+_GLASS_SOUND_PATH = "/System/Library/Sounds/Glass.aiff"
+# Minimum seconds between consecutive alerts — stops a fast refresh
+# cycle (or a news-heavy open) from machine-gunning the speakers.
+_ALERT_COOLDOWN_S = 5.0
+
+
+class AlertManager:
+    """App-wide sound player for new-HOT-news alerts.
+
+    Playback is fire-and-forget: we spawn ``afplay`` without awaiting
+    it, so a slow audio subsystem never blocks the event loop. One
+    global cooldown gates the whole app — multiple scanners firing at
+    once collapse into a single beep rather than overlapping audio.
+    """
+
+    def __init__(self) -> None:
+        # macOS: afplay is always on PATH. Other platforms: fall back
+        # to the terminal bell, which *some* terminals pipe to audio
+        # and most don't — good enough as a no-dependency default.
+        self._afplay = shutil.which("afplay") if sys.platform == "darwin" else None
+        self._last_played: float = 0.0
+
+    def alert(self) -> None:
+        now = time.monotonic()
+        if now - self._last_played < _ALERT_COOLDOWN_S:
+            return
+        self._last_played = now
+        if self._afplay:
+            try:
+                subprocess.Popen(
+                    [self._afplay, _GLASS_SOUND_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            except OSError:
+                # PATH lied or the sound file is missing — fail silent,
+                # no point pestering the UI over a missed ding.
+                pass
+        else:
+            # Terminal bell. Flush so it fires even when Textual is
+            # holding stdout open.
+            try:
+                sys.stdout.write("\a")
+                sys.stdout.flush()
+            except OSError:
+                pass
 
 
 class ScannerPane(Vertical):
@@ -53,16 +109,29 @@ class ScannerPane(Vertical):
     }
     """
 
-    def __init__(self, scanner: ScannerConfig, engine: ScannerEngine) -> None:
+    def __init__(
+        self,
+        scanner: ScannerConfig,
+        engine: ScannerEngine,
+        alerts: AlertManager | None = None,
+    ) -> None:
         super().__init__()
         self.scanner = scanner
         self.engine = engine
+        self.alerts = alerts
         self.summary = Static("idle")
         self.table: DataTable = DataTable(zebra_stripes=True, cursor_type="row")
         self._refresh_task: asyncio.Task[None] | None = None
         # Keep the last result so the `n` keybinding can map the cursor
         # row index back to a ScanRow (and its NewsSummary).
         self._current_result: ScanResult | None = None
+        # Seen (symbol, article_id) pairs that were in the HOT! bucket.
+        # Alerts fire only when the diff gains a new pair, so a symbol
+        # parked in the scanner on the same story stays silent.
+        self._seen_hot: set[tuple[str, str]] = set()
+        # First result is a priming pass — we load _seen_hot without
+        # alerting, else every HOT row at startup would ding.
+        self._primed_hot: bool = False
 
     def compose(self) -> ComposeResult:
         yield self.summary
@@ -105,9 +174,12 @@ class ScannerPane(Vertical):
         self.table.clear()
         self._current_result = result
         matches = 0
+        hot_now: set[tuple[str, str]] = set()
         for row in result.rows:
             if row.matched:
                 matches += 1
+            if _is_hot(row.news):
+                hot_now.add((row.symbol, row.news.article_id))  # type: ignore[union-attr]
             cells: list[Any] = [row.symbol, "✓" if row.matched else ""]
             for col in self.scanner.columns:
                 if col == "news":
@@ -118,12 +190,33 @@ class ScannerPane(Vertical):
                     cells.append(_fmt(row.values.get(col)))
             cells.append(row.error or "")
             self.table.add_row(*cells, key=row.symbol)
+        self._handle_hot_diff(hot_now)
         ts = result.ran_at.strftime("%H:%M:%S")
         self._set_summary(
             f"{self.scanner.name}  |  symbols: {len(result.rows)}  |  "
             f"matches: {matches}  |  refresh: {self.scanner.refresh_seconds}s  |  "
             f"last: {ts} ({result.duration_s:.1f}s)"
         )
+
+    def _handle_hot_diff(self, hot_now: set[tuple[str, str]]) -> None:
+        """Fire an alert when the HOT set gains a pair the previous
+        result didn't contain. Prime the state on first call so existing
+        HOT rows at startup don't all ding at once.
+        """
+        if not self.scanner.alert_on_hot_news or self.alerts is None:
+            # Keep state in sync regardless so enabling the flag
+            # mid-session doesn't immediately blast the backlog.
+            self._seen_hot = hot_now
+            self._primed_hot = True
+            return
+        if not self._primed_hot:
+            self._seen_hot = hot_now
+            self._primed_hot = True
+            return
+        new_pairs = hot_now - self._seen_hot
+        if new_pairs:
+            self.alerts.alert()
+        self._seen_hot = hot_now
 
     def row_at(self, idx: int | None) -> ScanRow | None:
         """Look up the ScanRow for a cursor index. Returns None when the
@@ -184,6 +277,18 @@ _NEWS_BUCKETS: tuple[tuple[float, str, str], ...] = (
     (24.0, "yellow",       "24hrs"),
     (48.0, "grey50",       "48hrs"),
 )
+
+
+# Tied to _NEWS_BUCKETS[0]: the "HOT!" age threshold in hours. Pulled
+# out so _is_hot and the bucket loop agree without re-indexing.
+_HOT_THRESHOLD_H = 2.0
+
+
+def _is_hot(news: NewsSummary | None) -> bool:
+    if news is None:
+        return False
+    age_hours = (datetime.now(timezone.utc) - news.time_utc).total_seconds() / 3600
+    return age_hours < _HOT_THRESHOLD_H
 
 
 def _news_label(news: NewsSummary | None) -> Any:
@@ -470,12 +575,17 @@ class TabLayout(Horizontal):
     }
     """
 
-    def __init__(self, tab_config: TabConfig, engine: ScannerEngine) -> None:
+    def __init__(
+        self,
+        tab_config: TabConfig,
+        engine: ScannerEngine,
+        alerts: AlertManager | None = None,
+    ) -> None:
         super().__init__()
         self.tab_config = tab_config
         self.engine = engine
         self.panes: list[ScannerPane] = [
-            ScannerPane(s, engine) for s in tab_config.scanners
+            ScannerPane(s, engine, alerts=alerts) for s in tab_config.scanners
         ]
         self.detail = DetailPanel(engine.ib)
         # Which pane most recently fired a RowHighlighted event. Used by
@@ -581,6 +691,7 @@ class ScannerApp(App):
             config.ib.market_data_type,
         )
         self.engine = ScannerEngine(self.ib_client)
+        self.alerts = AlertManager()
         self.tab_layouts: list[TabLayout] = []
 
     @property
@@ -594,7 +705,7 @@ class ScannerApp(App):
         yield Header(show_clock=True)
         with TabbedContent():
             for t in self.app_config.tabs:
-                layout = TabLayout(t, self.engine)
+                layout = TabLayout(t, self.engine, alerts=self.alerts)
                 self.tab_layouts.append(layout)
                 with TabPane(t.name, id=f"tab-{_slug(t.name)}"):
                     yield layout

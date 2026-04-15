@@ -1,0 +1,860 @@
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /css/reg-am/login.min.css
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /sso/lib/xyz.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+-> POST /sso/report
+-> POST /portal.proxy/v1/gstat/bulletins
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+-> GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+<- 200 POST /sso/report
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> GET /fonts/proxima-nova/proximanova-extrabold.woff2
+<- 200 GET /fonts/proxima-nova/proximanova-extrabold.woff2
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Dispatcher
+<- 302 POST /sso/Dispatcher
+-> request: /v1/api/sso/validate?gw=1
+-> GET /v1/api/sso/validate?gw=1,200|259ms
+-> request: /v1/api/one/user
+-> request: /v1/api/ssodh/init
+-> sso GET https://api.ibkr.com/v1/api/ssodh/init
+-> GET /v1/api/one/user,200|195ms
+-> request: /v1/api/ssodh/st
+-> sso GET https://api.ibkr.com/v1/api/ssodh/st
+-> request: /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status,200|71ms
+-> request: /v1/api/iserver/auth/ssodh/init
+-> POST https://api.ibkr.com/v1/api/iserver/auth/ssodh/init,200|275ms
+-> request: /v1/api/iserver/accounts
+-> GET /v1/api/iserver/accounts,200|85ms
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/accounts
+<- 200 GET /v1/api/iserver/accounts
+-> POST /v1/api/tickle
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/accounts
+<- 200 POST /v1/api/tickle
+<- 200 GET /v1/api/iserver/accounts
+-> POST /v1/api/tickle
+<- 200 POST /v1/api/tickle
+-> POST /v1/api/iserver/secdef/search
+-> POST /v1/api/iserver/secdef/search
+-> POST /v1/api/iserver/scanner/run
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=265598&period=2d&bar=5min&outsideRth=false
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=265598&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=265598&period=5d&bar=15min&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+<- 200 GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+-> GET /v1/api/iserver/fundamentals/866502700/summary
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=272093&period=5d&bar=15min&outsideRth=false
+<- 400 GET /v1/api/iserver/fundamentals/866502700/summary
+-> GET /v1/api/iserver/news?conids=866502700&pageSize=3
+<- 400 GET /v1/api/iserver/news?conids=866502700&pageSize=3
+-> POST /v1/api/iserver/secdef/search
+<- 200 GET /v1/api/iserver/marketdata/history?conid=272093&period=5d&bar=15min&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=4815747&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=4815747&period=5d&bar=15min&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=4391&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=4391&period=5d&bar=15min&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=76792991&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=76792991&period=5d&bar=15min&outsideRth=false
+<- 503 GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 503 GET /v1/api/iserver/marketdata/history?conid=265598&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=272093&period=2d&bar=5min&outsideRth=false
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+<- 503 GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|183ms
+<- 503 GET /v1/api/iserver/marketdata/history?conid=272093&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4815747&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=4815747&period=2d&bar=5min&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=3691937&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=3691937&period=2d&bar=5min&outsideRth=false
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=208813719&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=208813719&period=2d&bar=5min&outsideRth=false
+-> POST /v1/api/iserver/scanner/run
+-> POST /v1/api/iserver/secdef/search
+<- 200 POST /v1/api/iserver/secdef/search
+-> GET /v1/api/iserver/marketdata/history?conid=107113386&period=2d&bar=5min&outsideRth=false
+<- 200 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+<- 200 GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+-> GET /v1/api/iserver/news?conids=866502700&pageSize=3
+<- 200 GET /v1/api/iserver/marketdata/history?conid=107113386&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=76792991&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/news?conids=866502700&pageSize=3
+-> GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=76792991&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4391&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=4391&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+-> POST /v1/api/iserver/scanner/run
+<- 200 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+<- 200 GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+-> GET /v1/api/iserver/news?conids=866502700&pageSize=3
+<- 400 GET /v1/api/iserver/news?conids=866502700&pageSize=3
+-> GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|150ms
+-> POST /v1/api/iserver/scanner/run
+<- 200 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+<- 200 GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+-> GET /v1/api/iserver/news?conids=866502700&pageSize=3
+<- 400 GET /v1/api/iserver/news?conids=866502700&pageSize=3
+-> GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=265598&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=265598&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=272093&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=272093&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4815747&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=4815747&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=3691937&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=3691937&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=208813719&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=208813719&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=107113386&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=107113386&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=76792991&period=2d&bar=5min&outsideRth=false
+-> POST /v1/api/iserver/scanner/run
+<- 200 GET /v1/api/iserver/marketdata/history?conid=76792991&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4391&period=2d&bar=5min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=4391&period=2d&bar=5min&outsideRth=false
+<- 200 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+<- 200 GET /v1/api/iserver/marketdata/snapshot?conids=866502700&fields=31
+-> GET /v1/api/iserver/news?conids=866502700&pageSize=3
+<- 400 GET /v1/api/iserver/news?conids=866502700&pageSize=3
+-> GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=866502700&period=30d&bar=1d&outsideRth=false
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/accounts
+<- 200 GET /v1/api/iserver/accounts
+-> POST /v1/api/tickle
+<- 200 POST /v1/api/tickle
+-> GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=265598&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=265598&period=5d&bar=15min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=272093&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=272093&period=5d&bar=15min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4815747&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=4815747&period=5d&bar=15min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4391&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=4391&period=5d&bar=15min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=76792991&period=5d&bar=15min&outsideRth=false
+<- 200 GET /v1/api/iserver/marketdata/history?conid=76792991&period=5d&bar=15min&outsideRth=false
+<- 410 GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+<- 401 GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+-> POST /v1/api/iserver/scanner/run
+<- 401 POST /v1/api/iserver/scanner/run
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|124ms
+-> request: /v1/api/logout
+-> GET /v1/api/logout,200|117ms
+-> POST /v1/api/iserver/scanner/run
+<- 400 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=265598&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=265598&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=272093&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=272093&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4815747&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=4815747&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=3691937&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=3691937&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=208813719&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=208813719&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=107113386&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=107113386&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=76792991&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=76792991&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4391&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=4391&period=2d&bar=5min&outsideRth=false
+-> POST /v1/api/iserver/scanner/run
+<- 400 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+-> POST /v1/api/iserver/scanner/run
+<- 400 POST /v1/api/iserver/scanner/run
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|157ms
+-> POST /v1/api/iserver/scanner/run
+<- 400 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=756733&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=320227571&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=9579970&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=73128548&period=1d&bar=1min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=265598&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=265598&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=272093&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=272093&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4815747&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=4815747&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=3691937&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=3691937&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=208813719&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=208813719&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=107113386&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=107113386&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=76792991&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=76792991&period=2d&bar=5min&outsideRth=false
+-> GET /v1/api/iserver/marketdata/history?conid=4391&period=2d&bar=5min&outsideRth=false
+<- 400 GET /v1/api/iserver/marketdata/history?conid=4391&period=2d&bar=5min&outsideRth=false
+-> POST /v1/api/iserver/scanner/run
+<- 400 POST /v1/api/iserver/scanner/run
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|93ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|72ms
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|147ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|71ms
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/reg-am/login.min.css
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+<- 200 GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+-> GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+-> POST /sso/report
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+-> POST /portal.proxy/v1/gstat/bulletins
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+<- 200 POST /sso/report
+-> GET /images/common/logos/ibkr/interactive-brokers-inverse.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers-inverse.svg
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> GET /fonts/proxima-nova/proximanova-extrabold.woff2
+<- 200 GET /fonts/proxima-nova/proximanova-extrabold.woff2
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 304 GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 304 GET /css/reg-am/login.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+<- 304 GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+-> POST /sso/report
+-> GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+-> POST /portal.proxy/v1/gstat/bulletins
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+-> GET /images/web/favicons/home-screen-icon-128x128.png
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+<- 200 GET /images/web/favicons/home-screen-icon-128x128.png
+<- 200 POST /sso/report
+-> GET /images/common/logos/ibkr/interactive-brokers-inverse.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers-inverse.svg
+-> GET /css/reg-am/login.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js.map
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+<- 304 GET /css/reg-am/login.min.css
+-> GET /css/reg-am/login.min.css.map
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css.map
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js.map
+<- 200 GET /css/reg-am/login.min.css.map
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css.map
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/reg-am/login.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css.map
+<- 304 GET /css/reg-am/login.min.css
+<- 304 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 304 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 304 GET /sso/lib/xyz.bundle.min.js
+<- 304 GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js.map
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+-> POST /portal.proxy/v1/gstat/bulletins
+-> POST /sso/report
+-> GET /css/reg-am/login.min.css.map
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js.map
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css.map
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+-> GET /images/web/favicons/home-screen-icon-128x128.png
+<- 200 GET /css/reg-am/login.min.css.map
+<- 200 GET /images/web/favicons/home-screen-icon-128x128.png
+<- 200 POST /sso/report
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/reg-am/login.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+-> GET /sso/lib/xyz.bundle.min.js
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css.map
+<- 304 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 304 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 304 GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+<- 304 GET /css/reg-am/login.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js.map
+-> POST /sso/report
+-> GET /images/web/favicons/home-screen-icon-128x128.png
+-> POST /portal.proxy/v1/gstat/bulletins
+-> GET /css/reg-am/login.min.css.map
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css.map
+<- 200 GET /images/web/favicons/home-screen-icon-128x128.png
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js.map
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+<- 200 GET /css/reg-am/login.min.css.map
+<- 200 POST /sso/report
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/reg-am/login.min.css
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+-> GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+-> GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+-> POST /sso/report
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> POST /portal.proxy/v1/gstat/bulletins
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+<- 200 POST /sso/report
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Dispatcher
+<- 302 POST /sso/Dispatcher
+-> request: /v1/api/sso/validate?gw=1
+-> GET /v1/api/sso/validate?gw=1,200|160ms
+-> request: /v1/api/one/user
+-> request: /v1/api/ssodh/init
+-> sso GET https://api.ibkr.com/v1/api/ssodh/init
+-> GET /v1/api/one/user,200|256ms
+-> request: /v1/api/ssodh/st
+-> sso GET https://api.ibkr.com/v1/api/ssodh/st
+-> request: /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status,200|178ms
+-> request: /v1/api/iserver/auth/ssodh/init
+-> POST https://api.ibkr.com/v1/api/iserver/auth/ssodh/init,200|172ms
+-> request: /v1/api/iserver/accounts
+-> GET /v1/api/iserver/accounts,401|74ms
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|69ms
+-> request: /v1/api/logout
+-> GET /v1/api/logout,200|77ms
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|64ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|95ms
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|353ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|68ms
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|96ms
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|64ms
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> request: /v1/api/tickle
+-> GET /v1/api/tickle,200|157ms
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /css/reg-am/login.min.css
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /sso/lib/xyz.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+-> POST /sso/report
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+-> POST /portal.proxy/v1/gstat/bulletins
+-> GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+<- 200 POST /sso/report
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Dispatcher
+<- 200 POST /sso/Dispatcher
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 304 GET /css/reg-am/login.min.css
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 304 GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 304 GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+-> POST /sso/report
+-> POST /portal.proxy/v1/gstat/bulletins
+-> GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+-> GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+-> GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Regular.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-brands-400.woff2
+<- 200 GET /fonts/proxima-nova/Proxima-Nova-Semibold.woff2
+<- 200 GET /fonts/fontawesome-6.4.2/webfonts/fa-solid-900.woff2
+<- 204 POST /portal.proxy/v1/gstat/bulletins
+<- 200 POST /sso/report
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Authenticator
+<- 200 POST /sso/Authenticator
+-> POST /sso/Dispatcher
+<- 302 POST /sso/Dispatcher
+-> request: /v1/api/sso/validate?gw=1
+-> GET /v1/api/sso/validate?gw=1,200|187ms
+-> request: /v1/api/one/user
+-> request: /v1/api/ssodh/init
+-> sso GET https://api.ibkr.com/v1/api/ssodh/init
+-> GET /v1/api/one/user,200|64ms
+-> request: /v1/api/ssodh/st
+-> sso GET https://api.ibkr.com/v1/api/ssodh/st
+-> request: /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status,200|65ms
+-> request: /v1/api/iserver/auth/ssodh/init
+-> POST https://api.ibkr.com/v1/api/iserver/auth/ssodh/init,200|199ms
+-> request: /v1/api/iserver/accounts
+-> GET /v1/api/iserver/accounts,401|55ms
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /v1/api/iserver/auth/status
+<- 200 GET /v1/api/iserver/auth/status
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /css/reg-am/login.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /sso/lib/xyz.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /css/reg-am/login.min.css
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /sso/lib/xyz.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+-> GET /css/reg-am/login.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /css/reg-am/login.min.css
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /sso/lib/xyz.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+<- 200 GET /css/reg-am/login.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /sso/lib/xyz.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+<- 200 GET /sso/Login?forwardTo=22&RL=1&ip2loc=US
+-> GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /css/reg-am/login.min.css
+-> GET /css/ibkr/theme-ibkr-portal.min.css
+-> GET /css/fontawesome-6.4.2/all.min.css
+-> GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /css/bootstrap-5.2.2/bootstrap.min.css
+-> GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /css/reg-am/login.min.css
+<- 200 GET /css/ibkr/theme-ibkr-portal.min.css
+<- 200 GET /css/bootstrap-switch-3.3.2/bootstrap-switch.min.css
+-> GET /sso/lib/xyz.bundle.min.js
+<- 200 GET /css/fontawesome-6.4.2/all.min.css
+<- 200 GET /scripts/common/js/bootstrap-5.2.2/bootstrap.bundle.min.js
+<- 200 GET /scripts/common/js/jquery-3.7.0/jquery.min.js
+<- 200 GET /sso/lib/xyz.bundle.min.js
+-> GET /images/common/logos/ibkr/interactive-brokers.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers.svg
+-> GET /images/common/logos/ibkr/interactive-brokers-inverse.svg
+<- 200 GET /images/common/logos/ibkr/interactive-brokers-inverse.svg
