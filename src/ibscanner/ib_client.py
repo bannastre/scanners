@@ -31,6 +31,13 @@ class IBClient:
         # News-provider codes ("BRFG+BRFUPDN+…") are constant per account
         # and the lookup call isn't free; fetch lazily and cache.
         self._news_provider_codes: str | None = None
+        # reqFundamentalData raises TWS error 10358 ("Fundamentals data
+        # is not allowed") on accounts without the subscription. The
+        # error is per-account, not per-symbol, so once we see it we
+        # stop calling for the rest of the session — otherwise every
+        # row-highlight spams the gateway log with the same failure.
+        self._fundamentals_disabled: bool = False
+        self._fundamentals_disabled_reason: str = ""
 
     async def connect(self) -> None:
         await self.ib.connectAsync(self.host, self.port, clientId=self.client_id)
@@ -292,9 +299,13 @@ class IBClient:
         Returns ``(ok, text)`` where ``text`` is the raw XML on success
         or a short human-readable error on failure. Accounts without a
         fundamentals subscription get TWS error 10358 here — we surface
-        that back to the caller rather than raising so the detail panel
-        can render "not available" without sinking the whole TUI.
+        that back to the caller and flip ``_fundamentals_disabled`` so
+        subsequent calls short-circuit instead of spamming the gateway
+        log with the same "not allowed" error on every row-highlight.
         """
+        if self._fundamentals_disabled:
+            return False, self._fundamentals_disabled_reason
+
         if isinstance(symbol_or_contract, str):
             async with self._lock:
                 contract = await self._qualify(symbol_or_contract)
@@ -305,7 +316,16 @@ class IBClient:
             async with self._lock:
                 xml = await self.ib.reqFundamentalDataAsync(contract, report_type)
         except Exception as exc:  # noqa: BLE001
-            return False, f"{type(exc).__name__}: {exc}"
+            msg = f"{type(exc).__name__}: {exc}"
+            # 10358 = no fundamentals entitlement. Any "not allowed" is
+            # account-wide so caching the negative result is safe —
+            # pacing-style transient errors don't contain that phrase.
+            lowered = str(exc).lower()
+            if "10358" in lowered or "not allowed" in lowered:
+                self._fundamentals_disabled = True
+                self._fundamentals_disabled_reason = "fundamentals not entitled (10358)"
+                return False, self._fundamentals_disabled_reason
+            return False, msg
         if not xml:
             return False, "no data"
         return True, xml
