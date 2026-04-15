@@ -232,6 +232,84 @@ class IBClient:
             article = await self.ib.reqNewsArticleAsync(provider_code, article_id)
         return int(getattr(article, "articleType", 0)), getattr(article, "articleText", "") or ""
 
+    async def fetch_company_profile(
+        self,
+        symbol_or_contract: str | Stock,
+    ) -> dict[str, str]:
+        """Entitlement-free "who is this company" lookup via
+        reqContractDetailsAsync. Unlike reqFundamentalDataAsync this
+        works on any IBKR account — ContractDetails is reference data,
+        not a paid fundamentals feed.
+
+        Returns a dict of the useful fields (longName, industry,
+        category, subcategory, stockType, marketName, currency,
+        primaryExchange, validExchanges, tradingHours, timeZoneId).
+        Missing fields are omitted rather than set to empty strings so
+        the caller can render only what's present.
+        """
+        if isinstance(symbol_or_contract, str):
+            async with self._lock:
+                contract = await self._qualify(symbol_or_contract)
+        else:
+            contract = symbol_or_contract
+
+        try:
+            async with self._lock:
+                details = await self.ib.reqContractDetailsAsync(contract)
+        except Exception:  # noqa: BLE001
+            return {}
+        if not details:
+            return {}
+        cd = details[0]
+        c = getattr(cd, "contract", contract)
+
+        fields: dict[str, str] = {}
+        for src, key in (
+            (cd, "longName"),
+            (cd, "industry"),
+            (cd, "category"),
+            (cd, "subcategory"),
+            (cd, "stockType"),
+            (cd, "marketName"),
+            (cd, "timeZoneId"),
+            (cd, "tradingHours"),
+            (c, "primaryExchange"),
+            (c, "currency"),
+            (cd, "validExchanges"),
+        ):
+            value = getattr(src, key, None)
+            if value:
+                fields[key] = str(value)
+        return fields
+
+    async def fetch_fundamentals(
+        self,
+        symbol_or_contract: str | Stock,
+        report_type: str = "ReportSnapshot",
+    ) -> tuple[bool, str]:
+        """Fetch a fundamentals report for a symbol.
+
+        Returns ``(ok, text)`` where ``text`` is the raw XML on success
+        or a short human-readable error on failure. Accounts without a
+        fundamentals subscription get TWS error 10358 here — we surface
+        that back to the caller rather than raising so the detail panel
+        can render "not available" without sinking the whole TUI.
+        """
+        if isinstance(symbol_or_contract, str):
+            async with self._lock:
+                contract = await self._qualify(symbol_or_contract)
+        else:
+            contract = symbol_or_contract
+
+        try:
+            async with self._lock:
+                xml = await self.ib.reqFundamentalDataAsync(contract, report_type)
+        except Exception as exc:  # noqa: BLE001
+            return False, f"{type(exc).__name__}: {exc}"
+        if not xml:
+            return False, "no data"
+        return True, xml
+
 
 def _finite(v: Any) -> float | None:
     """Coerce ``v`` to a finite float or return None. ib_async fills

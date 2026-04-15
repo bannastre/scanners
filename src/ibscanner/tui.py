@@ -1,4 +1,4 @@
-"""Textual TUI: one tab per scanner, each on its own refresh interval."""
+"""Textual TUI: tabs of scanners with a fundamentals + news detail column."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Any
 
 from rich.text import Text
 from textual.app import App, ComposeResult
-from textual.containers import ScrollableContainer, Vertical
+from textual.containers import Horizontal, ScrollableContainer, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import (
     DataTable,
@@ -21,8 +21,8 @@ from textual.widgets import (
     TabPane,
 )
 
-from .config import AppConfig, ScannerConfig
-from .engine import NewsSummary, ScannerEngine, ScanResult
+from .config import AppConfig, ScannerConfig, TabConfig
+from .engine import NewsSummary, ScanRow, ScannerEngine, ScanResult
 from .ib_client import IBClient
 
 
@@ -73,7 +73,7 @@ class ScannerPane(Vertical):
         self.table.add_column("Match", width=6)
         for col in self.scanner.columns:
             # The "news" column renders short age-bucket labels
-            # ("HOT!", "NEW", "TODAY", "RECENT"); sized for the longest.
+            # ("HOT!", "8hrs", "24hrs", "48hrs"); sized for the longest.
             width = 7 if col == "news" else 14
             self.table.add_column(col, width=width)
         self.table.add_column("Note", width=24)
@@ -112,6 +112,8 @@ class ScannerPane(Vertical):
             for col in self.scanner.columns:
                 if col == "news":
                     cells.append(_news_label(row.news))
+                elif col in _INT_COLUMNS:
+                    cells.append(_fmt_int(row.values.get(col)))
                 else:
                     cells.append(_fmt(row.values.get(col)))
             cells.append(row.error or "")
@@ -123,18 +125,19 @@ class ScannerPane(Vertical):
             f"last: {ts} ({result.duration_s:.1f}s)"
         )
 
-    def news_at_cursor(self) -> NewsSummary | None:
-        """Look up the NewsSummary for whichever row the cursor is on.
-        Returns None when the pane has never rendered, when the index
-        is out of bounds (shouldn't happen normally), or when the
-        current row has no news attached.
+    def row_at(self, idx: int | None) -> ScanRow | None:
+        """Look up the ScanRow for a cursor index. Returns None when the
+        pane has never rendered or when the index is out of bounds.
         """
         if self._current_result is None:
             return None
-        idx = self.table.cursor_row
         if idx is None or idx < 0 or idx >= len(self._current_result.rows):
             return None
-        return self._current_result.rows[idx].news
+        return self._current_result.rows[idx]
+
+    def news_at_cursor(self) -> NewsSummary | None:
+        row = self.row_at(self.table.cursor_row)
+        return row.news if row else None
 
     def _set_summary(self, msg: str) -> None:
         self.summary.update(msg)
@@ -152,6 +155,24 @@ def _fmt(v: Any) -> str:
     return str(v)
 
 
+# Columns that represent discrete counts. Volume is served as float by
+# pandas (and so picks up a spurious ".00") but is always a whole
+# number in practice — _fmt_int renders those without decimals.
+_INT_COLUMNS = {"volume", "volume_sma_20"}
+
+
+def _fmt_int(v: Any) -> str:
+    if v is None:
+        return "—"
+    try:
+        n = int(round(float(v)))
+    except (TypeError, ValueError):
+        return str(v)
+    if abs(n) >= 1_000_000:
+        return f"{n / 1_000_000:,.2f}M"
+    return f"{n:,}"
+
+
 # Age buckets for the news column — short text labels rather than a
 # coloured dot so the age reads correctly even when Textual's
 # DataTable cursor-row styling clobbers the cell foreground colour
@@ -167,9 +188,9 @@ _NEWS_BUCKETS: tuple[tuple[float, str, str], ...] = (
 
 def _news_label(news: NewsSummary | None) -> Any:
     """Render the news column cell. Returns a styled Rich Text label
-    ("HOT!", "NEW", "TODAY", "RECENT") when we have a recent story,
-    or an em-dash when there's nothing (or the story is older than
-    the longest bucket).
+    ("HOT!", "8hrs", "24hrs", "48hrs") when we have a recent story, or
+    an em-dash when there's nothing (or the story is older than the
+    longest bucket).
     """
     if news is None:
         return "—"
@@ -222,10 +243,278 @@ def _strip_html(s: str) -> str:
     return "\n".join(line.strip() for line in text.splitlines()).strip()
 
 
+# ReportSnapshot fields worth showing first. Paths are relative to the
+# XML root; we fall back to a stripped-tags view if none of them match
+# (which is what happens for report types other than ReportSnapshot,
+# or for accounts whose entitlement returns a differently-shaped doc).
+_FUNDAMENTAL_FIELDS: tuple[tuple[str, str], ...] = (
+    (".//CoIDs/CoID[@Type='CompanyName']", "Company"),
+    (".//Issues/Issue/IssueID[@Type='Ticker']", "Ticker"),
+    (".//Issues/Issue/Exchange", "Exchange"),
+    (".//CoGeneralInfo/Employees", "Employees"),
+    (".//CoGeneralInfo/CommonShareholders", "Shareholders"),
+    (".//CoGeneralInfo/SharesOut", "Shares Out"),
+    (".//CoGeneralInfo/MarketCap", "Market Cap"),
+    (".//peerInfo/IndustryInfo/Industry[@type='TRBC']", "Industry"),
+    (".//peerInfo/IndustryInfo/Industry[@type='NAICS']", "NAICS"),
+)
+
+
+# Order matters — this is also the display order in the panel.
+# Labels are user-facing; keys match ib_async ContractDetails/Contract
+# attribute names (which fetch_company_profile mirrors verbatim).
+_PROFILE_FIELDS: tuple[tuple[str, str], ...] = (
+    ("longName", "Name"),
+    ("industry", "Industry"),
+    ("category", "Category"),
+    ("subcategory", "Subcategory"),
+    ("stockType", "Stock Type"),
+    ("primaryExchange", "Primary Exchange"),
+    ("marketName", "Market"),
+    ("currency", "Currency"),
+    ("timeZoneId", "Timezone"),
+    ("validExchanges", "Routes"),
+)
+
+
+def _format_profile(fields: dict[str, str]) -> list[str]:
+    """Turn a fetch_company_profile dict into a list of aligned
+    ``Label: value`` lines, preserving _PROFILE_FIELDS order.
+    """
+    if not fields:
+        return []
+    label_width = max(
+        len(label) for key, label in _PROFILE_FIELDS if key in fields
+    )
+    lines = []
+    for key, label in _PROFILE_FIELDS:
+        value = fields.get(key)
+        if value:
+            lines.append(f"{label:<{label_width}}  {value}")
+    return lines
+
+
+def _format_fundamentals(xml: str) -> str:
+    """Turn a ReportSnapshot XML blob into a readable key:value block.
+    Best-effort — parses a short list of well-known fields; if none
+    match (different report type, malformed XML) falls back to a
+    tag-stripped preview so the user still sees *something*.
+    """
+    try:
+        from xml.etree import ElementTree as ET
+
+        root = ET.fromstring(xml)
+    except Exception:  # noqa: BLE001
+        root = None
+
+    lines: list[str] = []
+    if root is not None:
+        for path, label in _FUNDAMENTAL_FIELDS:
+            el = root.find(path)
+            if el is None:
+                continue
+            value = (el.text or "").strip()
+            if value:
+                lines.append(f"{label}: {value}")
+    if lines:
+        return "\n".join(lines)
+
+    # Fallback: strip tags and show a preview. Snapshot reports are
+    # usually small; cap at 4000 chars so we never flood the panel.
+    text = _HTML_TAG_RE.sub(" ", xml)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text[:4000] or "(empty)"
+
+
+class DetailPanel(Vertical):
+    """Right-hand column shared by all scanners in a tab. The top half
+    renders a fundamentals snapshot for the currently-highlighted
+    symbol; the bottom half shows the latest news article inline.
+
+    Loads are debounced — a new ``set_symbol`` cancels any in-flight
+    fetches from a previous row so fast cursor movement doesn't pile
+    up IB calls.
+    """
+
+    DEFAULT_CSS = """
+    DetailPanel {
+        height: 1fr;
+        border-left: solid $primary 30%;
+    }
+    DetailPanel > Static.section-title {
+        background: $primary 20%;
+        color: $text;
+        text-style: bold;
+        padding: 0 1;
+    }
+    DetailPanel > ScrollableContainer {
+        height: 1fr;
+        padding: 0 1;
+    }
+    DetailPanel > ScrollableContainer > Static {
+        width: 100%;
+    }
+    """
+
+    def __init__(self, ib: IBClient) -> None:
+        super().__init__()
+        self.ib = ib
+        self._profile_title = Static("Company", classes="section-title")
+        self._profile_body = Static("(no symbol selected)")
+        self._news_title = Static("News", classes="section-title")
+        self._news_body = Static("(no symbol selected)")
+        self._current_symbol: str | None = None
+        self._current_news_id: str | None = None
+        self._profile_task: asyncio.Task[None] | None = None
+        self._news_task: asyncio.Task[None] | None = None
+
+    def compose(self) -> ComposeResult:
+        yield self._profile_title
+        yield ScrollableContainer(self._profile_body, id="profile-scroll")
+        yield self._news_title
+        yield ScrollableContainer(self._news_body, id="news-scroll")
+
+    def set_symbol(self, symbol: str, news: NewsSummary | None) -> None:
+        news_id = news.article_id if news else None
+        if symbol == self._current_symbol and news_id == self._current_news_id:
+            return
+        symbol_changed = symbol != self._current_symbol
+        news_changed = news_id != self._current_news_id
+        self._current_symbol = symbol
+        self._current_news_id = news_id
+
+        if symbol_changed:
+            if self._profile_task and not self._profile_task.done():
+                self._profile_task.cancel()
+            self._profile_title.update(f"Company — {symbol}")
+            self._profile_body.update("loading…")
+            self._profile_task = asyncio.create_task(self._load_profile(symbol))
+
+        if symbol_changed or news_changed:
+            if self._news_task and not self._news_task.done():
+                self._news_task.cancel()
+            self._news_task = asyncio.create_task(self._load_news(symbol, news))
+
+    async def _load_profile(self, symbol: str) -> None:
+        # reqContractDetails is entitlement-free and covers the "who is
+        # this company" bits (longName, industry, sector, exchange).
+        # We also try reqFundamentalData for richer metrics — silently
+        # skipped when the account lacks a subscription (error 10358).
+        profile = await self.ib.fetch_company_profile(symbol)
+        if symbol != self._current_symbol:
+            return
+        lines = _format_profile(profile)
+        if not lines:
+            self._profile_body.update(
+                Text("no contract details returned", style="dim")
+            )
+        else:
+            self._profile_body.update(Text("\n".join(lines)))
+
+        ok, text = await self.ib.fetch_fundamentals(symbol)
+        if symbol != self._current_symbol:
+            return
+        if ok:
+            extra = _format_fundamentals(text)
+            if extra:
+                self._profile_body.update(
+                    Text("\n".join(lines) + "\n\n" + extra)
+                )
+
+    async def _load_news(self, symbol: str, news: NewsSummary | None) -> None:
+        if news is None:
+            if symbol == self._current_symbol:
+                self._news_title.update(f"News — {symbol}")
+                self._news_body.update(Text("(no recent news)", style="dim"))
+            return
+        local_dt = news.time_utc.astimezone()
+        stories = f"{news.count} stor{'y' if news.count == 1 else 'ies'}"
+        header = (
+            f"News — {symbol}  ·  {news.provider_code}  ·  "
+            f"{local_dt.strftime('%Y-%m-%d %H:%M')}  ·  {stories}"
+        )
+        if symbol == self._current_symbol:
+            self._news_title.update(header)
+            self._news_body.update(Text(f"{news.headline}\n\nloading article…"))
+        try:
+            article_type, raw = await self.ib.fetch_article(
+                news.provider_code, news.article_id
+            )
+        except Exception as exc:  # noqa: BLE001
+            if symbol == self._current_symbol:
+                self._news_body.update(
+                    Text(f"{news.headline}\n\narticle fetch failed: {exc}", style="dim")
+                )
+            return
+        if symbol != self._current_symbol:
+            return
+        raw = raw or ""
+        body = _strip_html(raw) if (article_type == 1 or _looks_like_html(raw)) else raw
+        self._news_body.update(
+            Text(f"{news.headline}\n\n{body or '(empty body)'}")
+        )
+
+
+class TabLayout(Horizontal):
+    """One tab's contents: a vertical stack of scanner panes on the
+    left, a DetailPanel on the right. Width split is configured per
+    tab via ``left_ratio``.
+    """
+
+    DEFAULT_CSS = """
+    TabLayout {
+        height: 1fr;
+    }
+    TabLayout > #scanners-col {
+        height: 1fr;
+    }
+    """
+
+    def __init__(self, tab_config: TabConfig, engine: ScannerEngine) -> None:
+        super().__init__()
+        self.tab_config = tab_config
+        self.engine = engine
+        self.panes: list[ScannerPane] = [
+            ScannerPane(s, engine) for s in tab_config.scanners
+        ]
+        self.detail = DetailPanel(engine.ib)
+        # Which pane most recently fired a RowHighlighted event. Used by
+        # the `n` keybinding to route "show news" to the right table when
+        # a tab has multiple stacked scanners.
+        self.last_active_pane: ScannerPane | None = (
+            self.panes[0] if self.panes else None
+        )
+
+    def compose(self) -> ComposeResult:
+        left_pct = int(round(self.tab_config.left_ratio * 100))
+        right_pct = 100 - left_pct
+        left_col = Vertical(*self.panes, id="scanners-col")
+        left_col.styles.width = f"{left_pct}%"
+        self.detail.styles.width = f"{right_pct}%"
+        yield left_col
+        yield self.detail
+
+    def on_data_table_row_highlighted(
+        self, event: DataTable.RowHighlighted
+    ) -> None:
+        # Events bubble from every DataTable inside this tab; resolve
+        # back to the owning pane so we can look up the ScanRow (and
+        # its NewsSummary) by cursor index.
+        for pane in self.panes:
+            if pane.table is event.data_table:
+                self.last_active_pane = pane
+                row = pane.row_at(event.cursor_row)
+                if row is not None:
+                    self.detail.set_symbol(row.symbol, row.news)
+                event.stop()
+                return
+
+
 class NewsModal(ModalScreen[None]):
     """Fullscreen-ish overlay that shows one article's body. Dismissed
-    with Escape. Takes plain text — caller is responsible for stripping
-    HTML when needed.
+    with Escape. Kept alongside the inline news panel for readers who
+    want more room — the inline panel is always live; this one opens
+    on demand via the ``n`` keybinding.
     """
 
     BINDINGS = [("escape", "dismiss", "Close")]
@@ -292,16 +581,23 @@ class ScannerApp(App):
             config.ib.market_data_type,
         )
         self.engine = ScannerEngine(self.ib_client)
-        self.panes: list[ScannerPane] = []
+        self.tab_layouts: list[TabLayout] = []
+
+    @property
+    def panes(self) -> list[ScannerPane]:
+        """Flat view of every ScannerPane across every tab. Used by
+        ``action_refresh_all`` and by ``on_mount``'s initial kick.
+        """
+        return [p for layout in self.tab_layouts for p in layout.panes]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with TabbedContent():
-            for s in self.app_config.scanners:
-                pane = ScannerPane(s, self.engine)
-                self.panes.append(pane)
-                with TabPane(s.name, id=f"tab-{_slug(s.name)}"):
-                    yield pane
+            for t in self.app_config.tabs:
+                layout = TabLayout(t, self.engine)
+                self.tab_layouts.append(layout)
+                with TabPane(t.name, id=f"tab-{_slug(t.name)}"):
+                    yield layout
         yield Footer()
 
     async def on_mount(self) -> None:
@@ -331,13 +627,17 @@ class ScannerApp(App):
             pane.kick_refresh()
 
     async def action_show_news(self) -> None:
-        """Open the latest news article for the row under the cursor in
-        the currently-active scanner tab. Silent no-op when the row has
-        no news attached (likely: scanner config doesn't include a
-        "news" column, account has no news entitlement, or the symbol
-        genuinely has no recent stories).
+        """Open the latest news article for the row under the cursor of
+        the most-recently-active scanner in the current tab. Silent
+        no-op when the row has no news attached (likely: scanner config
+        doesn't include a "news" column, account has no news
+        entitlement, or the symbol genuinely has no recent stories).
         """
-        pane = self._active_pane()
+        layout = self._active_layout()
+        if layout is None:
+            self.notify("no active scanner tab", severity="warning")
+            return
+        pane = layout.last_active_pane
         if pane is None:
             self.notify("no active scanner tab", severity="warning")
             return
@@ -367,15 +667,15 @@ class ScannerApp(App):
         )
         self.push_screen(NewsModal(news.headline or "(no headline)", meta, text or "(empty body)"))
 
-    def _active_pane(self) -> "ScannerPane | None":
-        """Look up the ScannerPane inside the currently-active TabPane."""
+    def _active_layout(self) -> "TabLayout | None":
+        """Look up the TabLayout inside the currently-active TabPane."""
         tabs = self.query_one(TabbedContent)
         active_id = tabs.active
         if not active_id:
             return None
-        for scanner, pane in zip(self.app_config.scanners, self.panes):
-            if f"tab-{_slug(scanner.name)}" == active_id:
-                return pane
+        for tab_cfg, layout in zip(self.app_config.tabs, self.tab_layouts):
+            if f"tab-{_slug(tab_cfg.name)}" == active_id:
+                return layout
         return None
 
 
