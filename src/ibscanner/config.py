@@ -63,6 +63,12 @@ class ScannerConfig:
     # Cap how many of the scan results we enrich (IBKR returns up to 50).
     max_results: int = 50
 
+    # Play the system "Glass" sound when a row appears whose news story
+    # is <2h old (the "HOT!" bucket) and wasn't present in the previous
+    # refresh. No-op without `news` in `columns`. Per-scanner so you
+    # can wire alerts on a runners feed but stay quiet on watchlists.
+    alert_on_hot_news: bool = False
+
     def __post_init__(self) -> None:
         if self.type not in ("watchlist", "ibkr_scan"):
             raise ValueError(
@@ -164,6 +170,7 @@ def _load_scanner(s: dict[str, Any]) -> ScannerConfig:
         post_conditions=[str(c) for c in s.get("post_conditions", [])],
         enrich=bool(s.get("enrich", True)),
         max_results=int(s.get("max_results", 50)),
+        alert_on_hot_news=bool(s.get("alert_on_hot_news", False)),
     )
 
 
