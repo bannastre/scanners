@@ -15,6 +15,9 @@ scanners.yaml
 scanner_params.xml
 scanner_params.md
 
+# Logs
+*.log
+
 # OS
 .DS_Store
 
